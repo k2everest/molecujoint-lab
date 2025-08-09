@@ -196,7 +196,7 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
         return {
           ...molecule,
           energy: results.totalEnergy,
-          dipoleMoment: results.potentialEnergy > 0 ? Math.random() * 3 : 0, // Simplified
+          dipoleMoment: physics.calculateDipoleMoment(molecule),
         };
       }),
     }));
@@ -225,21 +225,19 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
 
   runMolecularDynamics: (moleculeId, settings) => {
     const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return;
+    let currentMolecule = state.molecules.find(m => m.id === moleculeId);
+    if (!currentMolecule) return;
 
-    // Initialize velocities (Maxwell-Boltzmann distribution)
-    const velocities: [number, number, number][] = molecule.atoms.map(() => [
+    let currentVelocities: [number, number, number][] = currentMolecule.atoms.map(() => [
       (Math.random() - 0.5) * 0.01,
       (Math.random() - 0.5) * 0.01,
       (Math.random() - 0.5) * 0.01
     ]);
 
-    // Run simulation steps
-    let currentMolecule = { ...molecule };
-    let currentVelocities = velocities;
+    // Use a fixed number of steps for now, or until a stop condition is implemented
+    const simulationSteps = settings.steps || 500; 
 
-    for (let step = 0; step < Math.min(settings.steps, 100); step++) {
+    for (let step = 0; step < simulationSteps; step++) {
       const result = physics.verletIntegration(currentMolecule, currentVelocities, settings);
       
       currentMolecule = {
@@ -250,13 +248,14 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
         }))
       };
       currentVelocities = result.newVelocities;
-    }
 
-    set((state) => ({
-      molecules: state.molecules.map(m => 
-        m.id === moleculeId ? currentMolecule : m
-      ),
-    }));
+      // Update the store for visualization at each step (can be optimized for performance)
+      set((state) => ({
+        molecules: state.molecules.map(m => 
+          m.id === moleculeId ? { ...currentMolecule } : m
+        ),
+      }));
+    }
   },
 
   optimizeGeometry: (moleculeId) => {
