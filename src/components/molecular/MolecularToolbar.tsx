@@ -25,6 +25,7 @@ import { useMolecularStore } from '../../store/molecularStore';
 import { MOLECULE_TEMPLATES } from '../../types/molecular';
 import { cn } from '../../lib/utils';
 import { parseXYZ, moleculeToXYZ } from '../../utils/xyzParser';
+import { parsePDB, moleculeToPDB } from '../../utils/pdbParser';
 
 interface MolecularToolbarProps {
   onShowPhysicsEditor?: () => void;
@@ -59,7 +60,13 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
-        const molecule = parseXYZ(content);
+        let molecule = null;
+        if (file.name.endsWith(".xyz")) {
+          molecule = parseXYZ(content);
+        } else if (file.name.endsWith(".pdb")) {
+          molecule = parsePDB(content);
+        }
+
         if (molecule) {
           addMolecule(molecule);
           toast.success("Molécula importada com sucesso!", {
@@ -67,7 +74,7 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
           });
         } else {
           toast.error("Erro ao importar molécula", {
-            description: "Não foi possível analisar o arquivo XYZ.",
+            description: "Não foi possível analisar o arquivo.",
           });
         }
       };
@@ -79,12 +86,18 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
     if (activeMoleculeId) {
       const activeMolecule = useMolecularStore.getState().molecules.find(m => m.id === activeMoleculeId);
       if (activeMolecule) {
-        const xyzContent = moleculeToXYZ(activeMolecule);
-        const blob = new Blob([xyzContent], { type: "text/plain" });
+        let content = "";
+        let fileName = "";
+        // For simplicity, always export as PDB if activeMoleculeId exists
+        // In a real app, user would choose format
+        content = moleculeToPDB(activeMolecule);
+        fileName = `${activeMolecule.name || "molecule"}.pdb`;
+        
+        const blob = new Blob([content], { type: "text/plain" });
         const url = URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `${activeMolecule.name || "molecule"}.xyz`;
+        a.download = fileName;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
