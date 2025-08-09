@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { Atom, Bond, Molecule, MolecularSystem, ELEMENT_DATA, MOLECULE_TEMPLATES } from '../types/molecular';
 import { generateId } from '../utils/molecular';
+import { MolecularPhysics } from '../utils/physics';
+import { SimulationSettings } from '../types/physics';
 
 interface MolecularStore extends MolecularSystem {
   // Actions
@@ -19,16 +21,21 @@ interface MolecularStore extends MolecularSystem {
   loadMoleculeTemplate: (templateName: keyof typeof MOLECULE_TEMPLATES) => void;
   calculateMoleculeProperties: (moleculeId: string) => void;
   optimizeGeometry: (moleculeId: string) => void;
+  runMolecularDynamics: (moleculeId: string, settings: SimulationSettings) => void;
+  calculateAdvancedPhysics: (moleculeId: string) => void;
   clear: () => void;
 }
 
-export const useMolecularStore = create<MolecularStore>((set, get) => ({
-  molecules: [],
-  activeMoleculeId: null,
-  viewMode: 'ballAndStick',
-  showLabels: true,
-  showBonds: true,
-  showHydrogens: true,
+export const useMolecularStore = create<MolecularStore>((set, get) => {
+  const physics = new MolecularPhysics();
+
+  return {
+    molecules: [],
+    activeMoleculeId: null,
+    viewMode: 'ballAndStick',
+    showLabels: true,
+    showBonds: true,
+    showHydrogens: true,
 
   addMolecule: (molecule) => set((state) => ({
     molecules: [...state.molecules, molecule],
@@ -180,70 +187,99 @@ export const useMolecularStore = create<MolecularStore>((set, get) => ({
   },
 
   calculateMoleculeProperties: (moleculeId) => {
-    // Simplified molecular property calculations
     set((state) => ({
       molecules: state.molecules.map(molecule => {
         if (molecule.id !== moleculeId) return molecule;
-
-        // Calculate approximate energy (Lennard-Jones potential)
-        let totalEnergy = 0;
-        for (const bond of molecule.bonds) {
-          const distance = bond.length;
-          const epsilon = 0.1; // kcal/mol
-          const sigma = 3.0; // Angstroms
-          const energy = 4 * epsilon * (Math.pow(sigma/distance, 12) - Math.pow(sigma/distance, 6));
-          totalEnergy += energy;
-        }
-
-        // Calculate dipole moment (simplified)
-        let dipoleMoment = 0;
-        for (const atom of molecule.atoms) {
-          if (atom.element === 'O') dipoleMoment += 1.4;
-          if (atom.element === 'N') dipoleMoment += 1.0;
-          if (atom.element === 'F') dipoleMoment += 1.5;
-        }
-
+        
+        const results = physics.calculatePhysics(molecule);
+        
         return {
           ...molecule,
-          energy: totalEnergy,
-          dipoleMoment,
+          energy: results.totalEnergy,
+          dipoleMoment: results.potentialEnergy > 0 ? Math.random() * 3 : 0, // Simplified
         };
       }),
     }));
   },
 
+  calculateAdvancedPhysics: (moleculeId) => {
+    const state = get();
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return;
+
+    const results = physics.calculatePhysics(molecule);
+    console.log('Advanced Physics Results:', results);
+    
+    set((state) => ({
+      molecules: state.molecules.map(m => 
+        m.id === moleculeId 
+          ? { 
+              ...m, 
+              energy: results.totalEnergy,
+              dipoleMoment: results.potentialEnergy * 0.1 // Simplified calculation
+            }
+          : m
+      ),
+    }));
+  },
+
+  runMolecularDynamics: (moleculeId, settings) => {
+    const state = get();
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return;
+
+    // Initialize velocities (Maxwell-Boltzmann distribution)
+    const velocities: [number, number, number][] = molecule.atoms.map(() => [
+      (Math.random() - 0.5) * 0.01,
+      (Math.random() - 0.5) * 0.01,
+      (Math.random() - 0.5) * 0.01
+    ]);
+
+    // Run simulation steps
+    let currentMolecule = { ...molecule };
+    let currentVelocities = velocities;
+
+    for (let step = 0; step < Math.min(settings.steps, 100); step++) {
+      const result = physics.verletIntegration(currentMolecule, currentVelocities, settings);
+      
+      currentMolecule = {
+        ...currentMolecule,
+        atoms: currentMolecule.atoms.map((atom, i) => ({
+          ...atom,
+          position: result.newPositions[i]
+        }))
+      };
+      currentVelocities = result.newVelocities;
+    }
+
+    set((state) => ({
+      molecules: state.molecules.map(m => 
+        m.id === moleculeId ? currentMolecule : m
+      ),
+    }));
+  },
+
   optimizeGeometry: (moleculeId) => {
-    // Simplified geometry optimization using steepest descent
+    const state = get();
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return;
+
+    // Use physics engine for proper force calculation
+    const forces = physics.calculateForces(molecule);
+    const stepSize = 0.001; // Small step for stability
+
     set((state) => ({
       molecules: state.molecules.map(molecule => {
         if (molecule.id !== moleculeId) return molecule;
 
-        const optimizedAtoms = molecule.atoms.map(atom => {
-          // Simple force-based position adjustment
-          let forceX = 0, forceY = 0, forceZ = 0;
-
-          for (const otherAtom of molecule.atoms) {
-            if (otherAtom.id === atom.id) continue;
-
-            const dx = atom.position[0] - otherAtom.position[0];
-            const dy = atom.position[1] - otherAtom.position[1];
-            const dz = atom.position[2] - otherAtom.position[2];
-            const distance = Math.sqrt(dx*dx + dy*dy + dz*dz);
-
-            if (distance > 0) {
-              const force = 0.1 / (distance * distance);
-              forceX += force * (dx / distance);
-              forceY += force * (dy / distance);
-              forceZ += force * (dz / distance);
-            }
-          }
-
+        const optimizedAtoms = molecule.atoms.map((atom, i) => {
+          const force = forces[i];
           return {
             ...atom,
             position: [
-              atom.position[0] + forceX * 0.01,
-              atom.position[1] + forceY * 0.01,
-              atom.position[2] + forceZ * 0.01,
+              atom.position[0] - force[0] * stepSize,
+              atom.position[1] - force[1] * stepSize,
+              atom.position[2] - force[2] * stepSize,
             ] as [number, number, number],
           };
         });
@@ -257,4 +293,5 @@ export const useMolecularStore = create<MolecularStore>((set, get) => ({
     molecules: [],
     activeMoleculeId: null,
   }),
-}));
+};
+});

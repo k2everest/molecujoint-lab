@@ -25,7 +25,11 @@ import { useMolecularStore } from '../../store/molecularStore';
 import { MOLECULE_TEMPLATES } from '../../types/molecular';
 import { cn } from '../../lib/utils';
 
-export const MolecularToolbar: React.FC = () => {
+interface MolecularToolbarProps {
+  onShowPhysicsEditor?: () => void;
+}
+
+export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysicsEditor }) => {
   const {
     viewMode,
     showLabels,
@@ -39,6 +43,8 @@ export const MolecularToolbar: React.FC = () => {
     activeMoleculeId,
     calculateMoleculeProperties,
     optimizeGeometry,
+    runMolecularDynamics,
+    calculateAdvancedPhysics,
     clear,
   } = useMolecularStore();
 
@@ -257,13 +263,16 @@ export const MolecularToolbar: React.FC = () => {
 
         {/* Advanced Tools */}
         <div className="flex gap-2">
-          <MolecularButton
-            variant="ghost"
-            size="sm"
-            title="Configurações avançadas"
-          >
-            <Settings className="w-4 h-4" />
-          </MolecularButton>
+          {onShowPhysicsEditor && (
+            <MolecularButton
+              onClick={onShowPhysicsEditor}
+              variant="molecular"
+              size="sm"
+              title="Editor de Física com IA"
+            >
+              <Settings className="w-4 h-4" />
+            </MolecularButton>
+          )}
 
           <MolecularButton
             variant="ghost"
