@@ -344,4 +344,33 @@ export class MolecularPhysics {
     };
     return masses[element] || 12.011;
   }
+
+  public calculateDipoleMoment(molecule: Molecule): number {
+    let dipoleX = 0;
+    let dipoleY = 0;
+    let dipoleZ = 0;
+
+    // Simplified partial charges for common elements (Debye units)
+    // These are illustrative and would typically come from quantum chemistry calculations
+    const partialCharges: Record<string, number> = {
+      H: 0.2, // Example partial charge for Hydrogen
+      C: 0.0, // Example partial charge for Carbon
+      O: -0.4, // Example partial charge for Oxygen
+      N: -0.3, // Example partial charge for Nitrogen
+      F: -0.5, // Example partial charge for Fluorine
+      Cl: -0.2, // Example partial charge for Chlorine
+    };
+
+    molecule.atoms.forEach(atom => {
+      const charge = partialCharges[atom.element] || 0;
+      dipoleX += charge * atom.position[0];
+      dipoleY += charge * atom.position[1];
+      dipoleZ += charge * atom.position[2];
+    });
+
+    // Convert to Debye (1 e*Å = 4.803 D)
+    const dipoleMagnitude = Math.sqrt(dipoleX * dipoleX + dipoleY * dipoleY + dipoleZ * dipoleZ) * 4.803;
+
+    return dipoleMagnitude;
+  }
 }
