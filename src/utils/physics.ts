@@ -387,4 +387,51 @@ export class MolecularPhysics {
 
     return dipoleMagnitude;
   }
+
+  public detectHydrogenBonds(molecule: Molecule): { donor: Atom; acceptor: Atom; hydrogen: Atom; distance: number; angle: number }[] {
+    const hydrogenBonds: { donor: Atom; acceptor: Atom; hydrogen: Atom; distance: number; angle: number }[] = [];
+
+    // Define potential hydrogen bond donors (D) and acceptors (A)
+    const donors = ["N", "O", "F"]; // Common electronegative atoms bonded to H
+    const acceptors = ["N", "O", "F"]; // Common electronegative atoms with lone pairs
+
+    molecule.atoms.forEach(atomH => {
+      if (atomH.element === "H") {
+        // Find the atom (D) bonded to this hydrogen
+        const donorBond = molecule.bonds.find(bond => bond.atom1Id === atomH.id || bond.atom2Id === atomH.id);
+        if (donorBond) {
+          const atomD = molecule.atoms.find(a => a.id === (donorBond.atom1Id === atomH.id ? donorBond.atom2Id : donorBond.atom1Id));
+
+          if (atomD && donors.includes(atomD.element)) {
+            // Iterate through all other atoms to find potential acceptors (A)
+            molecule.atoms.forEach(atomA => {
+              if (atomA.id !== atomD.id && atomA.id !== atomH.id && acceptors.includes(atomA.element)) {
+                const distanceDA = this.calculateDistance(atomD.position, atomA.position);
+                const distanceHA = this.calculateDistance(atomH.position, atomA.position);
+
+                // Criteria for hydrogen bond (typical values, can be refined)
+                const maxDistanceHA = 2.5; // Ångströms
+                const minAngleDHA = 150; // Degrees
+
+                if (distanceHA <= maxDistanceHA) {
+                  const angleDHA = this.calculateAngleBetweenAtoms(atomD, atomH, atomA);
+                  if (angleDHA >= minAngleDHA) {
+                    hydrogenBonds.push({
+                      donor: atomD,
+                      acceptor: atomA,
+                      hydrogen: atomH,
+                      distance: distanceHA,
+                      angle: angleDHA,
+                    });
+                  }
+                }
+              }
+            });
+          }
+        }
+      }
+    });
+
+    return hydrogenBonds;
+  }
 }

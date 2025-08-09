@@ -26,6 +26,7 @@ interface MolecularStore extends MolecularSystem {
   calculateDistance: (moleculeId: string, atom1Id: string, atom2Id: string) => number | null;
   calculateAngle: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string) => number | null;
   calculateTorsion: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string, atom4Id: string) => number | null;
+  detectHydrogenBonds: (moleculeId: string) => { donor: Atom; acceptor: Atom; hydrogen: Atom; distance: number; angle: number }[];
   clear: () => void;
 }
 
@@ -335,6 +336,14 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
       return physics.calculateTorsionAngleBetweenAtoms(atom1, atom2, atom3, atom4);
     }
     return null;
+  },
+
+  detectHydrogenBonds: (moleculeId) => {
+    const state = get();
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return [];
+
+    return physics.detectHydrogenBonds(molecule);
   },
 
   clear: () => set({
