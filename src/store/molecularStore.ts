@@ -261,31 +261,32 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
 
   optimizeGeometry: (moleculeId) => {
     const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return;
+    let currentMolecule = state.molecules.find(m => m.id === moleculeId);
+    if (!currentMolecule) return;
 
-    // Use physics engine for proper force calculation
-    const forces = physics.calculateForces(molecule);
     const stepSize = 0.001; // Small step for stability
+    const iterations = 100; // Number of optimization steps
+
+    for (let i = 0; i < iterations; i++) {
+      const forces = physics.calculateForces(currentMolecule);
+      const optimizedAtoms = currentMolecule.atoms.map((atom, idx) => {
+        const force = forces[idx];
+        return {
+          ...atom,
+          position: [
+            atom.position[0] - force[0] * stepSize,
+            atom.position[1] - force[1] * stepSize,
+            atom.position[2] - force[2] * stepSize,
+          ] as [number, number, number],
+        };
+      });
+      currentMolecule = { ...currentMolecule, atoms: optimizedAtoms };
+    }
 
     set((state) => ({
-      molecules: state.molecules.map(molecule => {
-        if (molecule.id !== moleculeId) return molecule;
-
-        const optimizedAtoms = molecule.atoms.map((atom, i) => {
-          const force = forces[i];
-          return {
-            ...atom,
-            position: [
-              atom.position[0] - force[0] * stepSize,
-              atom.position[1] - force[1] * stepSize,
-              atom.position[2] - force[2] * stepSize,
-            ] as [number, number, number],
-          };
-        });
-
-        return { ...molecule, atoms: optimizedAtoms };
-      }),
+      molecules: state.molecules.map(m => 
+        m.id === moleculeId ? currentMolecule : m
+      ),
     }));
   },
 
