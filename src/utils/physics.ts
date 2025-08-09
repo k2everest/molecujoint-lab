@@ -337,6 +337,20 @@ export class MolecularPhysics {
     ];
   }
 
+  public calculateDistanceBetweenAtoms(atom1: Atom, atom2: Atom): number {
+    return this.calculateDistance(atom1.position, atom2.position);
+  }
+
+  public calculateAngleBetweenAtoms(atom1: Atom, atom2: Atom, atom3: Atom): number {
+    const v1 = this.vectorBetween(atom2.position, atom1.position);
+    const v2 = this.vectorBetween(atom2.position, atom3.position);
+    return this.angleBetweenVectors(v1, v2) * 180 / Math.PI; // Return in degrees
+  }
+
+  public calculateTorsionAngleBetweenAtoms(atom1: Atom, atom2: Atom, atom3: Atom, atom4: Atom): number {
+    return this.calculateDihedralAngle(atom1, atom2, atom3, atom4) * 180 / Math.PI; // Return in degrees
+  }
+
   private getAtomicMass(element: string): number {
     const masses: Record<string, number> = {
       H: 1.008, C: 12.011, N: 14.007, O: 15.999, F: 18.998,

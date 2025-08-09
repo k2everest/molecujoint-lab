@@ -23,6 +23,9 @@ interface MolecularStore extends MolecularSystem {
   optimizeGeometry: (moleculeId: string) => void;
   runMolecularDynamics: (moleculeId: string, settings: SimulationSettings) => void;
   calculateAdvancedPhysics: (moleculeId: string) => void;
+  calculateDistance: (moleculeId: string, atom1Id: string, atom2Id: string) => number | null;
+  calculateAngle: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string) => number | null;
+  calculateTorsion: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string, atom4Id: string) => number | null;
   clear: () => void;
 }
 
@@ -287,6 +290,51 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
         m.id === moleculeId ? currentMolecule : m
       ),
     }));
+  },
+
+  calculateDistance: (moleculeId, atom1Id, atom2Id) => {
+    const state = get();
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return null;
+
+    const atom1 = molecule.atoms.find(a => a.id === atom1Id);
+    const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+
+    if (atom1 && atom2) {
+      return physics.calculateDistanceBetweenAtoms(atom1, atom2);
+    }
+    return null;
+  },
+
+  calculateAngle: (moleculeId, atom1Id, atom2Id, atom3Id) => {
+    const state = get();
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return null;
+
+    const atom1 = molecule.atoms.find(a => a.id === atom1Id);
+    const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+    const atom3 = molecule.atoms.find(a => a.id === atom3Id);
+
+    if (atom1 && atom2 && atom3) {
+      return physics.calculateAngleBetweenAtoms(atom1, atom2, atom3);
+    }
+    return null;
+  },
+
+  calculateTorsion: (moleculeId, atom1Id, atom2Id, atom3Id, atom4Id) => {
+    const state = get();
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return null;
+
+    const atom1 = molecule.atoms.find(a => a.id === atom1Id);
+    const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+    const atom3 = molecule.atoms.find(a => a.id === atom3Id);
+    const atom4 = molecule.atoms.find(a => a.id === atom4Id);
+
+    if (atom1 && atom2 && atom3 && atom4) {
+      return physics.calculateTorsionAngleBetweenAtoms(atom1, atom2, atom3, atom4);
+    }
+    return null;
   },
 
   clear: () => set({
