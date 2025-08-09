@@ -3,6 +3,9 @@ import { MoleculeViewer3D } from './MoleculeViewer3D';
 import { MolecularToolbar } from './MolecularToolbar';
 import { MolecularStatus } from './MolecularStatus';
 import { MolecularAnalysisPanel } from './MolecularAnalysisPanel';
+import { MolecularNotifications } from './MolecularNotifications';
+import { MolecularProgressBar } from './MolecularProgressBar';
+import { MolecularKeyboardShortcuts } from './MolecularKeyboardShortcuts';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
 import { useMolecularStore } from '../../store/molecularStore';
 import { toast } from 'sonner';
@@ -11,6 +14,7 @@ import { X } from 'lucide-react';
 
 export const MolecularApp: React.FC = () => {
   const [showPhysicsEditor, setShowPhysicsEditor] = useState(false);
+  const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const { loadMoleculeTemplate } = useMolecularStore();
 
   useEffect(() => {
@@ -19,7 +23,28 @@ export const MolecularApp: React.FC = () => {
     toast.success('Visualizador Molecular carregado! 🧪', {
       description: 'Molécula de água carregada como exemplo.',
     });
-  }, [loadMoleculeTemplate]);
+
+    // Keyboard shortcuts listener
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Show keyboard shortcuts with '?' key
+      if (event.key === '?' && !showPhysicsEditor) {
+        event.preventDefault();
+        setShowKeyboardShortcuts(true);
+      }
+      
+      // Close dialogs with Escape
+      if (event.key === 'Escape') {
+        if (showKeyboardShortcuts) {
+          setShowKeyboardShortcuts(false);
+        } else if (showPhysicsEditor) {
+          setShowPhysicsEditor(false);
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [loadMoleculeTemplate, showPhysicsEditor, showKeyboardShortcuts]);
 
   if (showPhysicsEditor) {
     return (
@@ -81,6 +106,16 @@ export const MolecularApp: React.FC = () => {
 
       {/* Status Bar */}
       <MolecularStatus />
+
+      {/* Floating UI Components */}
+      <MolecularNotifications />
+      <MolecularProgressBar />
+
+      {/* Keyboard Shortcuts Modal */}
+      <MolecularKeyboardShortcuts 
+        visible={showKeyboardShortcuts}
+        onClose={() => setShowKeyboardShortcuts(false)}
+      />
     </div>
   );
 };
