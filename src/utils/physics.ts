@@ -118,6 +118,40 @@ export class MolecularPhysics {
       }
     });
 
+    // Forças angulares
+    // Para cada átomo, encontrar ângulos que ele participa e calcular forças
+    molecule.atoms.forEach((atomK, k) => {
+      // Encontrar todos os pares de átomos (i, j) que formam um ângulo com atomK como o centro
+      const bondedAtoms = molecule.bonds.filter(bond => bond.atom1Id === atomK.id || bond.atom2Id === atomK.id)
+                                        .map(bond => bond.atom1Id === atomK.id ? bond.atom2Id : bond.atom1Id);
+
+      for (let i = 0; i < bondedAtoms.length; i++) {
+        for (let j = i + 1; j < bondedAtoms.length; j++) {
+          const atomI = molecule.atoms.find(a => a.id === bondedAtoms[i]);
+          const atomJ = molecule.atoms.find(a => a.id === bondedAtoms[j]);
+
+          if (atomI && atomJ) {
+            const angleForce = this.calculateAngleForce(atomI, atomK, atomJ);
+            
+            // Aplica a força ao átomo central (atomK)
+            forces[k][0] += angleForce[0];
+            forces[k][1] += angleForce[1];
+            forces[k][2] += angleForce[2];
+
+            // Aplica a força aos átomos terminais (atomI e atomJ) - simplificado para o oposto
+            // Uma implementação mais precisa exigiria a derivada do ângulo em relação às coordenadas
+            forces[molecule.atoms.findIndex(a => a.id === atomI.id)][0] -= angleForce[0] / 2;
+            forces[molecule.atoms.findIndex(a => a.id === atomI.id)][1] -= angleForce[1] / 2;
+            forces[molecule.atoms.findIndex(a => a.id === atomI.id)][2] -= angleForce[2] / 2;
+
+            forces[molecule.atoms.findIndex(a => a.id === atomJ.id)][0] -= angleForce[0] / 2;
+            forces[molecule.atoms.findIndex(a => a.id === atomJ.id)][1] -= angleForce[1] / 2;
+            forces[molecule.atoms.findIndex(a => a.id === atomJ.id)][2] -= angleForce[2] / 2;
+          }
+        }
+      }
+    });
+
     return forces;
   }
 
@@ -271,6 +305,36 @@ export class MolecularPhysics {
 
     const { equilibriumLength, forceConstant } = params.harmonic;
     return -forceConstant * (bond.length - equilibriumLength);
+  }
+
+  private calculateAngleForce(atom1: Atom, atom2: Atom, atom3: Atom): [number, number, number] {
+    const params = this.getParameters(atom1.element, atom2.element);
+    if (!params) return [0, 0, 0];
+
+    const { equilibriumAngle, forceConstant } = params.angle;
+
+    const r12 = this.vectorBetween(atom2.position, atom1.position);
+    const r32 = this.vectorBetween(atom2.position, atom3.position);
+
+    const r12_norm = this.normalize(r12);
+    const r32_norm = this.normalize(r32);
+
+    const angle = this.angleBetweenVectors(r12, r32);
+    const deltaAngle = (angle * 180 / Math.PI) - equilibriumAngle;
+
+    // Derivative of angle with respect to coordinates (simplified for demonstration)
+    // This is a complex calculation, a simplified approach is used here.
+    // For a more accurate force, numerical differentiation or analytical derivatives are needed.
+    const forceMagnitude = -forceConstant * deltaAngle * (Math.PI / 180); // Convert back to radians for force
+
+    // Apply force perpendicular to the bond vectors, towards equilibrium angle
+    const forceDirection = this.normalize(this.crossProduct(this.crossProduct(r12_norm, r32_norm), r12_norm));
+
+    return [
+      forceMagnitude * forceDirection[0],
+      forceMagnitude * forceDirection[1],
+      forceMagnitude * forceDirection[2],
+    ];
   }
 
   private getAtomicMass(element: string): number {
