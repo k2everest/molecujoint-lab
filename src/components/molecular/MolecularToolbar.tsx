@@ -24,6 +24,7 @@ import {
 import { useMolecularStore } from '../../store/molecularStore';
 import { MOLECULE_TEMPLATES } from '../../types/molecular';
 import { cn } from '../../lib/utils';
+import { parseXYZ, moleculeToXYZ } from '../../utils/xyzParser';
 
 interface MolecularToolbarProps {
   onShowPhysicsEditor?: () => void;
@@ -46,6 +47,7 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
     runMolecularDynamics,
     calculateAdvancedPhysics,
     clear,
+    addMolecule,
   } = useMolecularStore();
 
   const [isSimulating, setIsSimulating] = useState(false);
@@ -57,8 +59,17 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
       const reader = new FileReader();
       reader.onload = (e) => {
         const content = e.target?.result as string;
-        // TODO: Implement file parsing
-        console.log('File content:', content);
+        const molecule = parseXYZ(content);
+        if (molecule) {
+          addMolecule(molecule);
+          toast.success("Molécula importada com sucesso!", {
+            description: `${molecule.name} (${molecule.atoms.length} átomos) carregada.`,
+          });
+        } else {
+          toast.error("Erro ao importar molécula", {
+            description: "Não foi possível analisar o arquivo XYZ.",
+          });
+        }
       };
       reader.readAsText(file);
     }
@@ -66,8 +77,26 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
 
   const handleExport = () => {
     if (activeMoleculeId) {
-      // TODO: Implement export functionality
-      console.log('Exporting molecule...');
+      const activeMolecule = useMolecularStore.getState().molecules.find(m => m.id === activeMoleculeId);
+      if (activeMolecule) {
+        const xyzContent = moleculeToXYZ(activeMolecule);
+        const blob = new Blob([xyzContent], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${activeMolecule.name || "molecule"}.xyz`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        toast.success("Molécula exportada com sucesso!", {
+          description: `Arquivo ${a.download} gerado.`, 
+        });
+      } else {
+        toast.error("Erro ao exportar molécula", {
+          description: "Molécula ativa não encontrada.",
+        });
+      }
     }
   };
 
