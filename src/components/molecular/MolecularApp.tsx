@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { MoleculeViewer3D } from './MoleculeViewer3D';
 import { MolecularToolbar } from './MolecularToolbar';
 import { MolecularStatus } from './MolecularStatus';
+import { MolecularAnalysisPanel } from './MolecularAnalysisPanel';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
 import { useMolecularStore } from '../../store/molecularStore';
 import { toast } from 'sonner';
@@ -71,6 +72,11 @@ export const MolecularApp: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 relative overflow-hidden">
         <MoleculeViewer3D />
+        
+        {/* Analysis Panel - Positioned on the right side */}
+        <div className="absolute top-4 right-4 z-10">
+          <MolecularAnalysisPanel />
+        </div>
       </div>
 
       {/* Status Bar */}
