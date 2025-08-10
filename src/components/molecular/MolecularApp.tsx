@@ -12,7 +12,7 @@ import { ActiveLearningPanel } from './ActiveLearningPanel';
 import { useMolecularStore } from '../../store/molecularStore';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
-import { X } from 'lucide-react';
+import { X, FlaskConical } from 'lucide-react';
 
 export const MolecularApp: React.FC = () => {
   const [showPhysicsEditor, setShowPhysicsEditor] = useState(false);
@@ -86,9 +86,19 @@ export const MolecularApp: React.FC = () => {
               Plataforma científica para visualização e análise molecular
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-accent animate-orbital-pulse"></div>
-            <div className="text-sm text-muted-foreground">Sistema Ativo</div>
+          <div className="flex items-center gap-4">
+            <Button 
+              variant="outline" 
+              onClick={() => window.location.href = '/maestro'}
+              className="gap-2"
+            >
+              <FlaskConical className="w-4 h-4" />
+              MS Maestro
+            </Button>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-accent animate-orbital-pulse"></div>
+              <div className="text-sm text-muted-foreground">Sistema Ativo</div>
+            </div>
           </div>
         </div>
       </div>
