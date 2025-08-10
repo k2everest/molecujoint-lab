@@ -1,11 +1,14 @@
 import { Atom, Bond, Molecule } from '../types/molecular';
 import { ForceFieldParameters, PhysicsCalculation, SimulationSettings, DEFAULT_FORCE_FIELD } from '../types/physics';
+import { AdvancedPhysics } from './advancedPhysics';
 
 export class MolecularPhysics {
   private forceField: Record<string, Record<string, ForceFieldParameters>>;
+  private advancedPhysics: AdvancedPhysics;
 
   constructor(customForceField?: Record<string, Record<string, ForceFieldParameters>>) {
     this.forceField = customForceField || DEFAULT_FORCE_FIELD;
+    this.advancedPhysics = new AdvancedPhysics();
   }
 
   // Calcula potencial de Lennard-Jones
@@ -64,10 +67,10 @@ export class MolecularPhysics {
   }
 
   // Calcula forças sobre todos os átomos
-  calculateForces(molecule: Molecule): [number, number, number][] {
-    const forces: [number, number, number][] = molecule.atoms.map(() => [0, 0, 0]);
+  calculateForces(molecule: Molecule): { atomForces: [number, number, number][], totalEnergy: number } {
+    const basicForces: [number, number, number][] = molecule.atoms.map(() => [0, 0, 0]);
 
-    // Forças de Lennard-Jones (não-ligados)
+    // Forças básicas de Lennard-Jones (não-ligados)
     for (let i = 0; i < molecule.atoms.length; i++) {
       for (let j = i + 1; j < molecule.atoms.length; j++) {
         const atom1 = molecule.atoms[i];
@@ -85,13 +88,13 @@ export class MolecularPhysics {
           
           const direction = this.normalize(this.vectorBetween(atom1.position, atom2.position));
           
-          forces[i][0] += ljForce * direction[0];
-          forces[i][1] += ljForce * direction[1];
-          forces[i][2] += ljForce * direction[2];
+          basicForces[i][0] += ljForce * direction[0];
+          basicForces[i][1] += ljForce * direction[1];
+          basicForces[i][2] += ljForce * direction[2];
           
-          forces[j][0] -= ljForce * direction[0];
-          forces[j][1] -= ljForce * direction[1];
-          forces[j][2] -= ljForce * direction[2];
+          basicForces[j][0] -= ljForce * direction[0];
+          basicForces[j][1] -= ljForce * direction[1];
+          basicForces[j][2] -= ljForce * direction[2];
         }
       }
     }
@@ -108,20 +111,18 @@ export class MolecularPhysics {
         const harmonicForce = this.calculateHarmonicForce(bond, atom1, atom2);
         const direction = this.normalize(this.vectorBetween(atom1.position, atom2.position));
         
-        forces[atom1Index][0] += harmonicForce * direction[0];
-        forces[atom1Index][1] += harmonicForce * direction[1];
-        forces[atom1Index][2] += harmonicForce * direction[2];
+        basicForces[atom1Index][0] += harmonicForce * direction[0];
+        basicForces[atom1Index][1] += harmonicForce * direction[1];
+        basicForces[atom1Index][2] += harmonicForce * direction[2];
         
-        forces[atom2Index][0] -= harmonicForce * direction[0];
-        forces[atom2Index][1] -= harmonicForce * direction[1];
-        forces[atom2Index][2] -= harmonicForce * direction[2];
+        basicForces[atom2Index][0] -= harmonicForce * direction[0];
+        basicForces[atom2Index][1] -= harmonicForce * direction[1];
+        basicForces[atom2Index][2] -= harmonicForce * direction[2];
       }
     });
 
     // Forças angulares
-    // Para cada átomo, encontrar ângulos que ele participa e calcular forças
     molecule.atoms.forEach((atomK, k) => {
-      // Encontrar todos os pares de átomos (i, j) que formam um ângulo com atomK como o centro
       const bondedAtoms = molecule.bonds.filter(bond => bond.atom1Id === atomK.id || bond.atom2Id === atomK.id)
                                         .map(bond => bond.atom1Id === atomK.id ? bond.atom2Id : bond.atom1Id);
 
@@ -133,26 +134,36 @@ export class MolecularPhysics {
           if (atomI && atomJ) {
             const angleForce = this.calculateAngleForce(atomI, atomK, atomJ);
             
-            // Aplica a força ao átomo central (atomK)
-            forces[k][0] += angleForce[0];
-            forces[k][1] += angleForce[1];
-            forces[k][2] += angleForce[2];
+            basicForces[k][0] += angleForce[0];
+            basicForces[k][1] += angleForce[1];
+            basicForces[k][2] += angleForce[2];
 
-            // Aplica a força aos átomos terminais (atomI e atomJ) - simplificado para o oposto
-            // Uma implementação mais precisa exigiria a derivada do ângulo em relação às coordenadas
-            forces[molecule.atoms.findIndex(a => a.id === atomI.id)][0] -= angleForce[0] / 2;
-            forces[molecule.atoms.findIndex(a => a.id === atomI.id)][1] -= angleForce[1] / 2;
-            forces[molecule.atoms.findIndex(a => a.id === atomI.id)][2] -= angleForce[2] / 2;
+            basicForces[molecule.atoms.findIndex(a => a.id === atomI.id)][0] -= angleForce[0] / 2;
+            basicForces[molecule.atoms.findIndex(a => a.id === atomI.id)][1] -= angleForce[1] / 2;
+            basicForces[molecule.atoms.findIndex(a => a.id === atomI.id)][2] -= angleForce[2] / 2;
 
-            forces[molecule.atoms.findIndex(a => a.id === atomJ.id)][0] -= angleForce[0] / 2;
-            forces[molecule.atoms.findIndex(a => a.id === atomJ.id)][1] -= angleForce[1] / 2;
-            forces[molecule.atoms.findIndex(a => a.id === atomJ.id)][2] -= angleForce[2] / 2;
+            basicForces[molecule.atoms.findIndex(a => a.id === atomJ.id)][0] -= angleForce[0] / 2;
+            basicForces[molecule.atoms.findIndex(a => a.id === atomJ.id)][1] -= angleForce[1] / 2;
+            basicForces[molecule.atoms.findIndex(a => a.id === atomJ.id)][2] -= angleForce[2] / 2;
           }
         }
       }
     });
 
-    return forces;
+    // Adicionar forças avançadas
+    const advancedForces = this.advancedPhysics.calculateAdvancedForces(molecule);
+    
+    // Combinar forças básicas e avançadas
+    const totalForces: [number, number, number][] = basicForces.map((force, i) => [
+      force[0] + advancedForces[i][0],
+      force[1] + advancedForces[i][1],
+      force[2] + advancedForces[i][2]
+    ]);
+
+    // Calcular energia total
+    const totalEnergy = this.calculatePhysics(molecule).totalEnergy;
+
+    return { atomForces: totalForces, totalEnergy };
   }
 
   // Integração de Verlet para dinâmica molecular

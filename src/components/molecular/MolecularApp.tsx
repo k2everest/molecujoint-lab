@@ -6,6 +6,7 @@ import { MolecularAnalysisPanel } from './MolecularAnalysisPanel';
 import { MolecularNotifications } from './MolecularNotifications';
 import { MolecularProgressBar } from './MolecularProgressBar';
 import { MolecularKeyboardShortcuts } from './MolecularKeyboardShortcuts';
+import { PubMedSearchPanel } from './PubMedSearchPanel';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
 import { useMolecularStore } from '../../store/molecularStore';
 import { toast } from 'sonner';
@@ -97,6 +98,11 @@ export const MolecularApp: React.FC = () => {
       {/* Main Content */}
       <div className="flex-1 relative overflow-hidden">
         <MoleculeViewer3D />
+        
+        {/* PubMed Search Panel - Positioned on the left side */}
+        <div className="absolute top-4 left-4 z-10">
+          <PubMedSearchPanel />
+        </div>
         
         {/* Analysis Panel - Positioned on the right side */}
         <div className="absolute top-4 right-4 z-10">

@@ -85,13 +85,13 @@ export const MolecularProgressBar: React.FC<MolecularProgressBarProps> = ({ clas
   const getStatusColor = (status: CalculationProgress['status']) => {
     switch (status) {
       case 'running':
-        return 'border-l-blue-500 bg-blue-50/50';
+        return 'border-l-blue-500 bg-blue-100';
       case 'completed':
-        return 'border-l-green-500 bg-green-50/50';
+        return 'border-l-green-500 bg-green-100';
       case 'error':
-        return 'border-l-red-500 bg-red-50/50';
+        return 'border-l-red-500 bg-red-100';
       default:
-        return 'border-l-blue-500 bg-blue-50/50';
+        return 'border-l-blue-500 bg-blue-100';
     }
   };
 
@@ -118,7 +118,7 @@ export const MolecularProgressBar: React.FC<MolecularProgressBarProps> = ({ clas
         <Card 
           key={calculation.id}
           className={cn(
-            "border-l-4 shadow-lg animate-slide-in-right",
+            "border-l-4 shadow-lg animate-slide-in-right bg-card",
             getStatusColor(calculation.status)
           )}
         >

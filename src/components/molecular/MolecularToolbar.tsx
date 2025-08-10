@@ -224,7 +224,7 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
         {/* View Mode */}
         <div className="flex gap-2 border-r border-border pr-4">
           <div className="text-sm text-muted-foreground self-center mr-2">Visualização:</div>
-          {(['spheres', 'sticks', 'ballAndStick', 'spaceFill'] as const).map((mode) => (
+          {(['spheres', 'sticks', 'ballAndStick', 'spaceFill', 'ribbon', 'surface'] as const).map((mode) => (
             <MolecularButton
               key={mode}
               variant={viewMode === mode ? "molecular" : "outline"}
@@ -236,6 +236,8 @@ export const MolecularToolbar: React.FC<MolecularToolbarProps> = ({ onShowPhysic
               {mode === 'sticks' && <div className="w-4 h-1 bg-current" />}
               {mode === 'ballAndStick' && <Layers className="w-4 h-4" />}
               {mode === 'spaceFill' && <div className="w-4 h-4 rounded-full bg-current opacity-60" />}
+              {mode === 'ribbon' && <div className="w-4 h-1 bg-current rounded-full" />}
+              {mode === 'surface' && <div className="w-4 h-4 bg-current rounded opacity-40" />}
             </MolecularButton>
           ))}
         </div>

@@ -14,7 +14,7 @@ interface MolecularStore extends MolecularSystem {
   updateAtomPosition: (moleculeId: string, atomId: string, position: [number, number, number]) => void;
   addBond: (moleculeId: string, atom1Id: string, atom2Id: string, bondType?: 'single' | 'double' | 'triple') => void;
   removeBond: (moleculeId: string, bondId: string) => void;
-  setViewMode: (mode: 'spheres' | 'sticks' | 'ballAndStick' | 'spaceFill') => void;
+  setViewMode: (mode: 'spheres' | 'sticks' | 'ballAndStick' | 'spaceFill' | 'ribbon' | 'surface') => void;
   toggleLabels: () => void;
   toggleBonds: () => void;
   toggleHydrogens: () => void;
@@ -229,37 +229,95 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
 
   runMolecularDynamics: (moleculeId, settings) => {
     const state = get();
-    let currentMolecule = state.molecules.find(m => m.id === moleculeId);
-    if (!currentMolecule) return;
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    if (!molecule) return;
 
-    let currentVelocities: [number, number, number][] = currentMolecule.atoms.map(() => [
-      (Math.random() - 0.5) * 0.01,
-      (Math.random() - 0.5) * 0.01,
-      (Math.random() - 0.5) * 0.01
-    ]);
-
-    // Use a fixed number of steps for now, or until a stop condition is implemented
-    const simulationSteps = settings.steps || 500; 
-
-    for (let step = 0; step < simulationSteps; step++) {
-      const result = physics.verletIntegration(currentMolecule, currentVelocities, settings);
+    // Import the MD simulator dynamically
+    import('../utils/molecularDynamics').then(({ MolecularDynamicsSimulator }) => {
+      const simulator = new MolecularDynamicsSimulator(settings);
+      let mdState = simulator.createInitialState(molecule);
       
-      currentMolecule = {
-        ...currentMolecule,
-        atoms: currentMolecule.atoms.map((atom, i) => ({
-          ...atom,
-          position: result.newPositions[i]
-        }))
+      // Run simulation for specified number of steps
+      const numSteps = settings.numSteps || 1000;
+      const updateInterval = Math.max(1, Math.floor(numSteps / 100)); // Update 100 times
+      
+      let stepCount = 0;
+      const runStep = () => {
+        if (stepCount >= numSteps) return;
+        
+        // Calculate forces using the physics engine
+        const calculateForces = (positions: number[][]) => {
+          return positions.map((pos, i) => {
+            const atom = { ...molecule.atoms[i], position: pos as [number, number, number] };
+            const forces = physics.calculateForces({ ...molecule, atoms: [atom] });
+            return forces.atomForces[0] || [0, 0, 0];
+          });
+        };
+        
+        mdState = simulator.step(mdState, calculateForces);
+        
+        // Update molecule positions periodically
+        if (stepCount % updateInterval === 0) {
+          set((state) => ({
+            molecules: state.molecules.map(m => 
+              m.id === moleculeId 
+                ? {
+                    ...m,
+                    atoms: m.atoms.map((atom, i) => ({
+                      ...atom,
+                      position: mdState.positions[i] as [number, number, number]
+                    }))
+                  }
+                : m
+            ),
+          }));
+        }
+        
+        stepCount++;
+        
+        // Continue simulation
+        if (stepCount < numSteps) {
+          setTimeout(runStep, 10); // 10ms delay between steps
+        }
       };
-      currentVelocities = result.newVelocities;
+      
+      runStep();
+    }).catch(error => {
+      console.error('Failed to load MD simulator:', error);
+      // Fallback to simple simulation
+      const simulationSteps = settings.steps || 500;
+      let currentVelocities: [number, number, number][] = molecule.atoms.map(() => [
+        (Math.random() - 0.5) * 0.01,
+        (Math.random() - 0.5) * 0.01,
+        (Math.random() - 0.5) * 0.01
+      ]);
 
-      // Update the store for visualization at each step (can be optimized for performance)
-      set((state) => ({
-        molecules: state.molecules.map(m => 
-          m.id === moleculeId ? { ...currentMolecule } : m
-        ),
-      }));
-    }
+      for (let step = 0; step < simulationSteps; step++) {
+        const forces = physics.calculateForces(molecule);
+        const stepSize = settings.timestep || 0.01;
+
+        set((state) => ({
+          molecules: state.molecules.map(m => 
+            m.id === moleculeId 
+              ? {
+                  ...m,
+                  atoms: m.atoms.map((atom, i) => {
+                    const force = forces.atomForces[i] || [0, 0, 0];
+                    return {
+                      ...atom,
+                      position: [
+                        atom.position[0] + force[0] * stepSize,
+                        atom.position[1] + force[1] * stepSize,
+                        atom.position[2] + force[2] * stepSize,
+                      ] as [number, number, number]
+                    };
+                  })
+                }
+              : m
+          ),
+        }));
+      }
+    });
   },
 
   optimizeGeometry: (moleculeId) => {

@@ -74,15 +74,15 @@ export const MolecularNotifications: React.FC<MolecularNotificationsProps> = ({ 
   const getTypeColor = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return 'border-l-green-500 bg-green-50/50';
+        return 'border-l-green-500 bg-green-100';
       case 'warning':
-        return 'border-l-yellow-500 bg-yellow-50/50';
+        return 'border-l-yellow-500 bg-yellow-100';
       case 'info':
-        return 'border-l-blue-500 bg-blue-50/50';
+        return 'border-l-blue-500 bg-blue-100';
       case 'calculation':
-        return 'border-l-purple-500 bg-purple-50/50';
+        return 'border-l-purple-500 bg-purple-100';
       default:
-        return 'border-l-blue-500 bg-blue-50/50';
+        return 'border-l-blue-500 bg-blue-100';
     }
   };
 
@@ -96,7 +96,7 @@ export const MolecularNotifications: React.FC<MolecularNotificationsProps> = ({ 
         <Card 
           key={notification.id}
           className={cn(
-            "border-l-4 shadow-lg animate-slide-in-left",
+            "border-l-4 shadow-lg animate-slide-in-left bg-card",
             getTypeColor(notification.type)
           )}
         >
