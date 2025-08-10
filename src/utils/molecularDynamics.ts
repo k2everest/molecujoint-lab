@@ -18,7 +18,7 @@ export class MolecularDynamicsSimulator {
   private friction: number;
 
   constructor(settings: SimulationSettings) {
-    this.timestep = settings.timestep || 0.001; // fs
+    this.timestep = settings.timeStep || 0.001; // fs
     this.temperature = settings.temperature || 300; // K
     this.thermostatCoupling = settings.thermostatCoupling || 0.1;
     this.friction = settings.friction || 0.01;

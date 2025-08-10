@@ -8,6 +8,7 @@ import { MolecularProgressBar } from './MolecularProgressBar';
 import { MolecularKeyboardShortcuts } from './MolecularKeyboardShortcuts';
 import { PubMedSearchPanel } from './PubMedSearchPanel';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
+import { ActiveLearningPanel } from './ActiveLearningPanel';
 import { useMolecularStore } from '../../store/molecularStore';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
@@ -107,6 +108,11 @@ export const MolecularApp: React.FC = () => {
         {/* Analysis Panel - Positioned on the right side */}
         <div className="absolute top-4 right-4 z-10">
           <MolecularAnalysisPanel />
+        </div>
+        
+        {/* Active Learning Panel - Positioned on the bottom right */}
+        <div className="absolute bottom-4 right-4 z-10">
+          <ActiveLearningPanel />
         </div>
       </div>
 

@@ -40,6 +40,8 @@ export interface SimulationSettings {
   steps: number;
   dampingFactor: number;
   integrator: 'verlet' | 'langevin' | 'nose-hoover';
+  thermostatCoupling?: number;
+  friction?: number;
 }
 
 export const DEFAULT_FORCE_FIELD: Record<string, Record<string, ForceFieldParameters>> = {

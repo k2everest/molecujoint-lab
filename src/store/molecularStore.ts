@@ -238,7 +238,7 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
       let mdState = simulator.createInitialState(molecule);
       
       // Run simulation for specified number of steps
-      const numSteps = settings.numSteps || 1000;
+      const numSteps = settings.steps || 1000;
       const updateInterval = Math.max(1, Math.floor(numSteps / 100)); // Update 100 times
       
       let stepCount = 0;
@@ -294,7 +294,7 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
 
       for (let step = 0; step < simulationSteps; step++) {
         const forces = physics.calculateForces(molecule);
-        const stepSize = settings.timestep || 0.01;
+        const stepSize = settings.timeStep || 0.01;
 
         set((state) => ({
           molecules: state.molecules.map(m => 

@@ -234,7 +234,7 @@ export class MolecularPhysics {
       kineticEnergy: 0,
       potentialEnergy,
       temperature: 298.15, // Default room temperature
-      forces
+      forces: forces.atomForces
     };
   }
 

@@ -21,6 +21,7 @@ import {
   Layers,
   Grid3x3,
 } from 'lucide-react';
+import { toast } from 'sonner';
 import { useMolecularStore } from '../../store/molecularStore';
 import { MOLECULE_TEMPLATES } from '../../types/molecular';
 import { cn } from '../../lib/utils';

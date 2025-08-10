@@ -28,30 +28,30 @@ export interface Molecule {
 export interface MolecularSystem {
   molecules: Molecule[];
   activeMoleculeId: string | null;
-  viewMode: 'spheres' | 'sticks' | 'ballAndStick' | 'spaceFill';
+  viewMode: 'spheres' | 'sticks' | 'ballAndStick' | 'spaceFill' | 'ribbon' | 'surface';
   showLabels: boolean;
   showBonds: boolean;
   showHydrogens: boolean;
 }
 
-export const ELEMENT_DATA: Record<string, { color: string; radius: number; name: string }> = {
-  H: { color: '#FFFFFF', radius: 0.31, name: 'Hydrogen' },
-  C: { color: '#909090', radius: 0.70, name: 'Carbon' },
-  N: { color: '#3050F8', radius: 0.65, name: 'Nitrogen' },
-  O: { color: '#FF0D0D', radius: 0.60, name: 'Oxygen' },
-  F: { color: '#90E050', radius: 0.50, name: 'Fluorine' },
-  P: { color: '#FF8000', radius: 1.00, name: 'Phosphorus' },
-  S: { color: '#FFFF30', radius: 1.00, name: 'Sulfur' },
-  Cl: { color: '#1FF01F', radius: 0.97, name: 'Chlorine' },
-  Br: { color: '#A62929', radius: 1.12, name: 'Bromine' },
-  I: { color: '#940094', radius: 1.32, name: 'Iodine' },
-  Na: { color: '#AB5CF2', radius: 1.54, name: 'Sodium' },
-  Mg: { color: '#8AFF00', radius: 1.30, name: 'Magnesium' },
-  Al: { color: '#BFA6A6', radius: 1.18, name: 'Aluminum' },
-  Si: { color: '#F0C8A0', radius: 1.11, name: 'Silicon' },
-  Ca: { color: '#3DFF00', radius: 1.74, name: 'Calcium' },
-  Fe: { color: '#E06633', radius: 1.17, name: 'Iron' },
-  Zn: { color: '#7D80B0', radius: 1.25, name: 'Zinc' },
+export const ELEMENT_DATA: Record<string, { color: string; radius: number; name: string; covalentRadius: number }> = {
+  H: { color: '#FFFFFF', radius: 0.31, name: 'Hydrogen', covalentRadius: 0.31 },
+  C: { color: '#909090', radius: 0.70, name: 'Carbon', covalentRadius: 0.76 },
+  N: { color: '#3050F8', radius: 0.65, name: 'Nitrogen', covalentRadius: 0.71 },
+  O: { color: '#FF0D0D', radius: 0.60, name: 'Oxygen', covalentRadius: 0.66 },
+  F: { color: '#90E050', radius: 0.50, name: 'Fluorine', covalentRadius: 0.57 },
+  P: { color: '#FF8000', radius: 1.00, name: 'Phosphorus', covalentRadius: 1.07 },
+  S: { color: '#FFFF30', radius: 1.00, name: 'Sulfur', covalentRadius: 1.05 },
+  Cl: { color: '#1FF01F', radius: 0.97, name: 'Chlorine', covalentRadius: 0.99 },
+  Br: { color: '#A62929', radius: 1.12, name: 'Bromine', covalentRadius: 1.20 },
+  I: { color: '#940094', radius: 1.32, name: 'Iodine', covalentRadius: 1.39 },
+  Na: { color: '#AB5CF2', radius: 1.54, name: 'Sodium', covalentRadius: 1.66 },
+  Mg: { color: '#8AFF00', radius: 1.30, name: 'Magnesium', covalentRadius: 1.41 },
+  Al: { color: '#BFA6A6', radius: 1.18, name: 'Aluminum', covalentRadius: 1.21 },
+  Si: { color: '#F0C8A0', radius: 1.11, name: 'Silicon', covalentRadius: 1.11 },
+  Ca: { color: '#3DFF00', radius: 1.74, name: 'Calcium', covalentRadius: 1.76 },
+  Fe: { color: '#E06633', radius: 1.17, name: 'Iron', covalentRadius: 1.32 },
+  Zn: { color: '#7D80B0', radius: 1.25, name: 'Zinc', covalentRadius: 1.22 },
 };
 
 export const MOLECULE_TEMPLATES = {
