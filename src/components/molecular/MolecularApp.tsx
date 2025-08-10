@@ -9,6 +9,7 @@ import { MolecularKeyboardShortcuts } from './MolecularKeyboardShortcuts';
 import { PubMedSearchPanel } from './PubMedSearchPanel';
 import { DiseaseAnalysisPanel } from './DiseaseAnalysisPanel';
 import { AIMoleculeDesignerPanel } from './AIMoleculeDesignerPanel';
+import { MoleculeSelector } from './MoleculeSelector';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
 import { ActiveLearningPanel } from './ActiveLearningPanel';
 import { useMolecularStore } from '../../store/molecularStore';
@@ -39,12 +40,6 @@ export const MolecularApp: React.FC = () => {
   };
 
   useEffect(() => {
-    // Load a default molecule when the app starts
-    loadMoleculeTemplate('water');
-    toast.success('Visualizador Molecular carregado! 🧪', {
-      description: 'Molécula de água carregada como exemplo.',
-    });
-
     // Keyboard shortcuts listener
     const handleKeyDown = (event: KeyboardEvent) => {
       // Show keyboard shortcuts with '?' key
@@ -129,6 +124,11 @@ export const MolecularApp: React.FC = () => {
       <div className="flex-1 relative overflow-hidden">
         <MoleculeViewer3D />
         
+        {/* Top Center - Molecule Selector */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <MoleculeSelector />
+        </div>
+        
         {/* Left Side Panels */}
         <div className="absolute top-4 left-4 z-10 space-y-4">
           <PubMedSearchPanel onMoleculesExtracted={handleMoleculesExtracted} />
@@ -136,7 +136,7 @@ export const MolecularApp: React.FC = () => {
         </div>
         
         {/* Center Panel - AI Molecule Designer */}
-        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-10">
           <AIMoleculeDesignerPanel onMoleculeDesigned={handleMoleculeDesigned} />
         </div>
         

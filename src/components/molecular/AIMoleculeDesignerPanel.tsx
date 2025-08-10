@@ -56,7 +56,7 @@ export const AIMoleculeDesignerPanel: React.FC<AIMoleculeDesignerPanelProps> = (
   const [referenceCompounds, setReferenceCompounds] = useState('');
 
   const aiDesigner = new AIMoleculeDesigner();
-  const { addMolecule } = useMolecularStore();
+  const { addMoleculeToCollection } = useMolecularStore();
 
   const handleDesignMolecules = async () => {
     if (!targetDisease.trim()) return;
@@ -150,7 +150,7 @@ export const AIMoleculeDesignerPanel: React.FC<AIMoleculeDesignerPanelProps> = (
         }
       };
 
-      addMolecule(molecule);
+      addMoleculeToCollection(molecule);
       onMoleculeDesigned?.(designedMolecule);
     } catch (error) {
       console.error('Error loading designed molecule:', error);

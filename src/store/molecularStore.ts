@@ -8,6 +8,7 @@ import { ExtractedMolecule } from '../utils/moleculeExtractor';
 interface MolecularStore extends MolecularSystem {
   // Actions
   addMolecule: (molecule: Molecule) => void;
+  addMoleculeToCollection: (molecule: Molecule) => void;
   removeMolecule: (id: string) => void;
   setActiveMolecule: (id: string | null) => void;
   addAtom: (moleculeId: string, element: string, position: [number, number, number]) => void;
@@ -45,7 +46,12 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     showHydrogens: true,
 
   addMolecule: (molecule) => set((state) => ({
-    molecules: [...state.molecules, molecule],
+    molecules: [molecule], // Substituir todas as moléculas pela nova
+    activeMoleculeId: molecule.id,
+  })),
+
+  addMoleculeToCollection: (molecule) => set((state) => ({
+    molecules: [...state.molecules, molecule], // Adicionar à coleção existente
     activeMoleculeId: molecule.id,
   })),
 
@@ -187,10 +193,10 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
       bonds,
     };
 
-    set((state) => ({
-      molecules: [...state.molecules, molecule],
+    set({
+      molecules: [molecule], // Substituir todas as moléculas pela nova
       activeMoleculeId: moleculeId,
-    }));
+    });
   },
 
   calculateMoleculeProperties: (moleculeId) => {
@@ -408,13 +414,12 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
   },
 
   loadExtractedMolecules: (extractedMolecules) => {
-    const state = get();
     const newMolecules: Molecule[] = [];
 
     for (const extracted of extractedMolecules) {
       // Tentar criar molécula a partir da fórmula
       if (extracted.formula) {
-        const molecule = state.createMoleculeFromFormula(extracted.formula, extracted.name);
+        const molecule = get().createMoleculeFromFormula(extracted.formula, extracted.name);
         if (molecule) {
           newMolecules.push(molecule);
         }
@@ -442,6 +447,7 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
       }
     }
 
+    // Adicionar moléculas à coleção existente
     set((state) => ({
       molecules: [...state.molecules, ...newMolecules],
       activeMoleculeId: newMolecules.length > 0 ? newMolecules[0].id : state.activeMoleculeId
