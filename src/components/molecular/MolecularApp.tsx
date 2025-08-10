@@ -12,17 +12,19 @@ import { AIMoleculeDesignerPanel } from './AIMoleculeDesignerPanel';
 import { MoleculeSelector } from './MoleculeSelector';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
 import { ActiveLearningPanel } from './ActiveLearningPanel';
+import { DraggablePanel, useDraggablePanels } from '../ui/draggable-panel';
 import { useMolecularStore } from '../../store/molecularStore';
 import { ExtractedMolecule } from '../../utils/moleculeExtractor';
 import { DesignedMolecule } from '../../utils/aiMoleculeDesigner';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
-import { X, FlaskConical } from 'lucide-react';
+import { X, FlaskConical, BookOpen, Microscope, Sparkles, BarChart3, GraduationCap } from 'lucide-react';
 
 export const MolecularApp: React.FC = () => {
   const [showPhysicsEditor, setShowPhysicsEditor] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
   const { loadMoleculeTemplate, loadExtractedMolecules } = useMolecularStore();
+  const { panels, addPanel, removePanel, bringToFront } = useDraggablePanels();
 
   const handleMoleculesExtracted = (molecules: ExtractedMolecule[]) => {
     if (molecules.length > 0) {
@@ -37,6 +39,82 @@ export const MolecularApp: React.FC = () => {
     toast.success(`Molécula projetada com IA carregada! 🤖`, {
       description: `${molecule.name} - Drug-likeness: ${(molecule.drugLikeness.score * 100).toFixed(0)}%`,
     });
+  };
+
+  // Panel management functions
+  const openPubMedPanel = () => {
+    addPanel('pubmed', (
+      <DraggablePanel
+        title="Pesquisa PubMed"
+        icon={<BookOpen className="w-4 h-4 text-blue-500" />}
+        defaultPosition={{ x: 50, y: 100 }}
+        defaultSize={{ width: 400, height: 500 }}
+        onClose={() => removePanel('pubmed')}
+        zIndex={panels.find(p => p.id === 'pubmed')?.zIndex || 10}
+      >
+        <PubMedSearchPanel onMoleculesExtracted={handleMoleculesExtracted} />
+      </DraggablePanel>
+    ));
+  };
+
+  const openDiseaseAnalysisPanel = () => {
+    addPanel('disease', (
+      <DraggablePanel
+        title="Análise de Doenças"
+        icon={<Microscope className="w-4 h-4 text-green-500" />}
+        defaultPosition={{ x: 100, y: 150 }}
+        defaultSize={{ width: 400, height: 500 }}
+        onClose={() => removePanel('disease')}
+        zIndex={panels.find(p => p.id === 'disease')?.zIndex || 10}
+      >
+        <DiseaseAnalysisPanel onMoleculeLoad={handleMoleculesExtracted} />
+      </DraggablePanel>
+    ));
+  };
+
+  const openAIDesignerPanel = () => {
+    addPanel('ai-designer', (
+      <DraggablePanel
+        title="Design Molecular com IA"
+        icon={<Sparkles className="w-4 h-4 text-purple-500" />}
+        defaultPosition={{ x: 150, y: 200 }}
+        defaultSize={{ width: 450, height: 600 }}
+        onClose={() => removePanel('ai-designer')}
+        zIndex={panels.find(p => p.id === 'ai-designer')?.zIndex || 10}
+      >
+        <AIMoleculeDesignerPanel onMoleculeDesigned={handleMoleculeDesigned} />
+      </DraggablePanel>
+    ));
+  };
+
+  const openAnalysisPanel = () => {
+    addPanel('analysis', (
+      <DraggablePanel
+        title="Análise Molecular"
+        icon={<BarChart3 className="w-4 h-4 text-orange-500" />}
+        defaultPosition={{ x: 200, y: 100 }}
+        defaultSize={{ width: 350, height: 450 }}
+        onClose={() => removePanel('analysis')}
+        zIndex={panels.find(p => p.id === 'analysis')?.zIndex || 10}
+      >
+        <MolecularAnalysisPanel />
+      </DraggablePanel>
+    ));
+  };
+
+  const openActiveLearningPanel = () => {
+    addPanel('active-learning', (
+      <DraggablePanel
+        title="Aprendizado Ativo"
+        icon={<GraduationCap className="w-4 h-4 text-indigo-500" />}
+        defaultPosition={{ x: 250, y: 150 }}
+        defaultSize={{ width: 350, height: 400 }}
+        onClose={() => removePanel('active-learning')}
+        zIndex={panels.find(p => p.id === 'active-learning')?.zIndex || 10}
+      >
+        <ActiveLearningPanel />
+      </DraggablePanel>
+    ));
   };
 
   useEffect(() => {
@@ -118,7 +196,59 @@ export const MolecularApp: React.FC = () => {
       </div>
 
       {/* Toolbar */}
-      <MolecularToolbar onShowPhysicsEditor={() => setShowPhysicsEditor(true)} />
+      <div className="bg-card border-b border-border p-2">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openPubMedPanel}
+              className="gap-2"
+            >
+              <BookOpen className="w-4 h-4" />
+              PubMed
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openDiseaseAnalysisPanel}
+              className="gap-2"
+            >
+              <Microscope className="w-4 h-4" />
+              Análise de Doenças
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openAIDesignerPanel}
+              className="gap-2"
+            >
+              <Sparkles className="w-4 h-4" />
+              Design com IA
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openAnalysisPanel}
+              className="gap-2"
+            >
+              <BarChart3 className="w-4 h-4" />
+              Análise
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openActiveLearningPanel}
+              className="gap-2"
+            >
+              <GraduationCap className="w-4 h-4" />
+              Aprendizado
+            </Button>
+          </div>
+          
+          <MolecularToolbar onShowPhysicsEditor={() => setShowPhysicsEditor(true)} />
+        </div>
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 relative overflow-hidden">
@@ -129,26 +259,12 @@ export const MolecularApp: React.FC = () => {
           <MoleculeSelector />
         </div>
         
-        {/* Left Side Panels */}
-        <div className="absolute top-4 left-4 z-10 space-y-4">
-          <PubMedSearchPanel onMoleculesExtracted={handleMoleculesExtracted} />
-          <DiseaseAnalysisPanel onMoleculeLoad={handleMoleculesExtracted} />
-        </div>
-        
-        {/* Center Panel - AI Molecule Designer */}
-        <div className="absolute top-24 left-1/2 transform -translate-x-1/2 z-10">
-          <AIMoleculeDesignerPanel onMoleculeDesigned={handleMoleculeDesigned} />
-        </div>
-        
-        {/* Analysis Panel - Positioned on the right side */}
-        <div className="absolute top-4 right-4 z-10">
-          <MolecularAnalysisPanel />
-        </div>
-        
-        {/* Active Learning Panel - Positioned on the bottom right */}
-        <div className="absolute bottom-20 right-4 z-10">
-          <ActiveLearningPanel />
-        </div>
+        {/* Render draggable panels */}
+        {panels.map(panel => (
+          <div key={panel.id} onClick={() => bringToFront(panel.id)}>
+            {panel.component}
+          </div>
+        ))}
       </div>
 
       {/* Status Bar */}

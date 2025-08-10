@@ -120,8 +120,7 @@ const MOLECULE_DATABASE: MoleculeDatabase = {
     mechanism: 'Cleaves viral polyproteins',
     target: 'HIV maturation'
   },
-  'integrase': {
-    formula: 'C20H21FN6O5',
+    integrase: {
     type: 'enzyme',
     synonyms: ['IN', 'HIV integrase'],
     mechanism: 'Integrates viral DNA into host genome',
@@ -178,16 +177,19 @@ export class MoleculeExtractor {
         if (matches) {
           const confidence = this.calculateConfidence(moleculeName, text, data.type);
           
-          molecules.push({
-            name: this.capitalizeFirst(moleculeName),
-            formula: data.formula,
-            type: data.type,
-            confidence,
-            context: this.extractContext(text, matches[0]),
-            synonyms: data.synonyms,
-            mechanism: data.mechanism,
-            target: data.target
-          });
+          // Só adicionar se a confiança for alta o suficiente e não for apenas uma menção genérica
+          if (confidence > 0.6 && this.isSpecificMention(text, moleculeName, data.type)) {
+            molecules.push({
+              name: this.capitalizeFirst(moleculeName),
+              formula: data.formula,
+              type: data.type,
+              confidence,
+              context: this.extractContext(text, matches[0]),
+              synonyms: data.synonyms,
+              mechanism: data.mechanism,
+              target: data.target
+            });
+          }
           break; // Evitar duplicatas para a mesma molécula
         }
       }
@@ -305,6 +307,35 @@ export class MoleculeExtractor {
       mechanisms,
       suggestions
     };
+  }
+
+  private isSpecificMention(text: string, moleculeName: string, type: ExtractedMolecule['type']): boolean {
+    const lowerText = text.toLowerCase();
+    const lowerMolecule = moleculeName.toLowerCase();
+    
+    // Para enzimas como integrase, verificar se é mencionada em contexto específico
+    if (type === 'enzyme') {
+      const specificContexts = [
+        'inhibitor', 'inhibition', 'binding', 'active site', 'crystal structure',
+        'drug target', 'therapeutic target', 'compound', 'molecule', 'ligand'
+      ];
+      
+      // Verificar se há contexto específico próximo à menção
+      const moleculeIndex = lowerText.indexOf(lowerMolecule);
+      if (moleculeIndex !== -1) {
+        const contextWindow = lowerText.substring(
+          Math.max(0, moleculeIndex - 100),
+          Math.min(lowerText.length, moleculeIndex + lowerMolecule.length + 100)
+        );
+        
+        return specificContexts.some(context => contextWindow.includes(context));
+      }
+      
+      return false;
+    }
+    
+    // Para outros tipos, aceitar menções mais facilmente
+    return true;
   }
 
   private calculateConfidence(moleculeName: string, text: string, type: ExtractedMolecule['type']): number {
