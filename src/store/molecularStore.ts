@@ -3,6 +3,7 @@ import { Atom, Bond, Molecule, MolecularSystem, ELEMENT_DATA, MOLECULE_TEMPLATES
 import { generateId } from '../utils/molecular';
 import { MolecularPhysics } from '../utils/physics';
 import { SimulationSettings } from '../types/physics';
+import { ExtractedMolecule } from '../utils/moleculeExtractor';
 
 interface MolecularStore extends MolecularSystem {
   // Actions
@@ -27,6 +28,8 @@ interface MolecularStore extends MolecularSystem {
   calculateAngle: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string) => number | null;
   calculateTorsion: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string, atom4Id: string) => number | null;
   detectHydrogenBonds: (moleculeId: string) => { donor: Atom; acceptor: Atom; hydrogen: Atom; distance: number; angle: number }[];
+  loadExtractedMolecules: (extractedMolecules: ExtractedMolecule[]) => void;
+  createMoleculeFromFormula: (formula: string, name: string) => Molecule | null;
   clear: () => void;
 }
 
@@ -402,6 +405,126 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     if (!molecule) return [];
 
     return physics.detectHydrogenBonds(molecule);
+  },
+
+  loadExtractedMolecules: (extractedMolecules) => {
+    const state = get();
+    const newMolecules: Molecule[] = [];
+
+    for (const extracted of extractedMolecules) {
+      // Tentar criar molécula a partir da fórmula
+      if (extracted.formula) {
+        const molecule = state.createMoleculeFromFormula(extracted.formula, extracted.name);
+        if (molecule) {
+          newMolecules.push(molecule);
+        }
+      } else {
+        // Criar molécula placeholder se não tiver fórmula
+        const placeholderMolecule: Molecule = {
+          id: generateId(),
+          name: extracted.name,
+          atoms: [],
+          bonds: [],
+          properties: {
+            totalEnergy: 0,
+            dipoleMoment: 0,
+            centerOfMass: [0, 0, 0]
+          },
+          metadata: {
+            source: 'PubMed',
+            type: extracted.type,
+            mechanism: extracted.mechanism,
+            target: extracted.target,
+            confidence: extracted.confidence
+          }
+        };
+        newMolecules.push(placeholderMolecule);
+      }
+    }
+
+    set((state) => ({
+      molecules: [...state.molecules, ...newMolecules],
+      activeMoleculeId: newMolecules.length > 0 ? newMolecules[0].id : state.activeMoleculeId
+    }));
+  },
+
+  createMoleculeFromFormula: (formula, name) => {
+    try {
+      // Parser simples de fórmula molecular
+      const atoms: Atom[] = [];
+      const elementCounts = new Map<string, number>();
+      
+      // Regex para extrair elementos e suas quantidades
+      const elementRegex = /([A-Z][a-z]?)(\d*)/g;
+      let match;
+      
+      while ((match = elementRegex.exec(formula)) !== null) {
+        const element = match[1];
+        const count = parseInt(match[2]) || 1;
+        elementCounts.set(element, count);
+      }
+
+      // Criar átomos baseados na fórmula
+      let atomIndex = 0;
+      for (const [element, count] of elementCounts) {
+        for (let i = 0; i < count; i++) {
+          const elementData = ELEMENT_DATA[element];
+          if (elementData) {
+            // Posicionar átomos em uma estrutura simples
+            const angle = (atomIndex * 2 * Math.PI) / Array.from(elementCounts.values()).reduce((a, b) => a + b, 0);
+            const radius = 2.0;
+            
+            atoms.push({
+              id: generateId(),
+              element,
+              position: [
+                radius * Math.cos(angle),
+                radius * Math.sin(angle),
+                0
+              ],
+              charge: 0,
+              velocity: [0, 0, 0],
+              force: [0, 0, 0]
+            });
+            atomIndex++;
+          }
+        }
+      }
+
+      // Criar ligações simples entre átomos adjacentes (estrutura linear simples)
+      const bonds: Bond[] = [];
+      for (let i = 0; i < atoms.length - 1; i++) {
+        bonds.push({
+          id: generateId(),
+          atom1Id: atoms[i].id,
+          atom2Id: atoms[i + 1].id,
+          type: 'single',
+          length: 1.5,
+          strength: 1.0
+        });
+      }
+
+      const molecule: Molecule = {
+        id: generateId(),
+        name: name || `Molecule ${formula}`,
+        atoms,
+        bonds,
+        properties: {
+          totalEnergy: 0,
+          dipoleMoment: 0,
+          centerOfMass: [0, 0, 0]
+        },
+        metadata: {
+          source: 'PubMed',
+          formula
+        }
+      };
+
+      return molecule;
+    } catch (error) {
+      console.error('Error creating molecule from formula:', error);
+      return null;
+    }
   },
 
   clear: () => set({

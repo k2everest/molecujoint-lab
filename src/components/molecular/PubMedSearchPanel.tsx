@@ -14,21 +14,28 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
-  Filter
+  Filter,
+  Beaker,
+  Target,
+  Zap,
+  Atom
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { PubMedAPI, PubMedArticle, PubMedSearchParams } from '../../utils/pubmedApi';
+import { MoleculeExtractor, ExtractedMolecule } from '../../utils/moleculeExtractor';
 
 interface PubMedSearchPanelProps {
   className?: string;
   moleculeName?: string;
   onArticleSelect?: (article: PubMedArticle) => void;
+  onMoleculesExtracted?: (molecules: ExtractedMolecule[]) => void;
 }
 
 export const PubMedSearchPanel: React.FC<PubMedSearchPanelProps> = ({
   className,
   moleculeName,
-  onArticleSelect
+  onArticleSelect,
+  onMoleculesExtracted
 }) => {
   const [isExpanded, setIsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState(moleculeName || '');
@@ -37,8 +44,12 @@ export const PubMedSearchPanel: React.FC<PubMedSearchPanelProps> = ({
   const [articles, setArticles] = useState<PubMedArticle[]>([]);
   const [selectedArticle, setSelectedArticle] = useState<PubMedArticle | null>(null);
   const [maxResults, setMaxResults] = useState(20);
+  const [extractedMolecules, setExtractedMolecules] = useState<ExtractedMolecule[]>([]);
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showMoleculeAnalysis, setShowMoleculeAnalysis] = useState(false);
 
   const pubmedApi = new PubMedAPI();
+  const moleculeExtractor = new MoleculeExtractor();
 
   const handleSearch = async () => {
     if (!searchQuery.trim()) return;
@@ -77,6 +88,31 @@ export const PubMedSearchPanel: React.FC<PubMedSearchPanelProps> = ({
   const handleArticleClick = (article: PubMedArticle) => {
     setSelectedArticle(article);
     onArticleSelect?.(article);
+    
+    // Analisar artigo automaticamente
+    analyzeArticle(article);
+  };
+
+  const analyzeArticle = async (article: PubMedArticle) => {
+    setIsAnalyzing(true);
+    try {
+      const analysis = moleculeExtractor.analyzeArticle(
+        article.title,
+        article.abstract || '',
+        article.keywords
+      );
+      
+      setExtractedMolecules(analysis.molecules);
+      setShowMoleculeAnalysis(true);
+      
+      // Notificar componente pai sobre as moléculas extraídas
+      onMoleculesExtracted?.(analysis.molecules);
+      
+    } catch (error) {
+      console.error('Error analyzing article:', error);
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const searchTypes = [
@@ -286,6 +322,111 @@ export const PubMedSearchPanel: React.FC<PubMedSearchPanelProps> = ({
                   </Button>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Molecule Analysis */}
+        {showMoleculeAnalysis && extractedMolecules.length > 0 && isExpanded && (
+          <div className="space-y-3 pt-3 border-t border-border/50">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Beaker className="w-4 h-4 text-purple-500" />
+                <span className="text-sm font-medium">Moléculas Identificadas</span>
+                {isAnalyzing && <Loader2 className="w-3 h-3 animate-spin" />}
+              </div>
+              <Badge variant="outline" className="text-xs">
+                {extractedMolecules.length} encontradas
+              </Badge>
+            </div>
+            
+            <div className="max-h-48 overflow-y-auto space-y-2">
+              {extractedMolecules.map((molecule, index) => (
+                <Card key={index} className="p-2 bg-muted/50">
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-sm font-medium flex items-center gap-1">
+                        <Atom className="w-3 h-3" />
+                        {molecule.name}
+                      </h5>
+                      <div className="flex items-center gap-1">
+                        <Badge 
+                          variant={molecule.type === 'drug' ? 'default' : 'secondary'} 
+                          className="text-xs"
+                        >
+                          {molecule.type}
+                        </Badge>
+                        <Badge 
+                          variant="outline" 
+                          className={cn(
+                            "text-xs",
+                            molecule.confidence > 0.8 ? "text-green-600" :
+                            molecule.confidence > 0.6 ? "text-yellow-600" : "text-red-600"
+                          )}
+                        >
+                          {Math.round(molecule.confidence * 100)}%
+                        </Badge>
+                      </div>
+                    </div>
+                    
+                    {molecule.formula && (
+                      <div className="text-xs text-muted-foreground">
+                        <strong>Fórmula:</strong> {molecule.formula}
+                      </div>
+                    )}
+                    
+                    {molecule.mechanism && (
+                      <div className="text-xs text-muted-foreground flex items-start gap-1">
+                        <Zap className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        <span><strong>Mecanismo:</strong> {molecule.mechanism}</span>
+                      </div>
+                    )}
+                    
+                    {molecule.target && (
+                      <div className="text-xs text-muted-foreground flex items-start gap-1">
+                        <Target className="w-3 h-3 mt-0.5 flex-shrink-0" />
+                        <span><strong>Alvo:</strong> {molecule.target}</span>
+                      </div>
+                    )}
+                    
+                    {molecule.context && (
+                      <div className="text-xs text-muted-foreground bg-background/50 p-1 rounded">
+                        <strong>Contexto:</strong> {molecule.context}
+                      </div>
+                    )}
+                    
+                    {molecule.synonyms && molecule.synonyms.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {molecule.synonyms.slice(0, 3).map((synonym, idx) => (
+                          <Badge key={idx} variant="outline" className="text-xs">
+                            {synonym}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </Card>
+              ))}
+            </div>
+            
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowMoleculeAnalysis(false)}
+                className="text-xs"
+              >
+                Ocultar Análise
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onMoleculesExtracted?.(extractedMolecules)}
+                className="text-xs"
+              >
+                <Beaker className="w-3 h-3 mr-1" />
+                Carregar Moléculas
+              </Button>
             </div>
           </div>
         )}

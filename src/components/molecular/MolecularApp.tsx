@@ -7,9 +7,13 @@ import { MolecularNotifications } from './MolecularNotifications';
 import { MolecularProgressBar } from './MolecularProgressBar';
 import { MolecularKeyboardShortcuts } from './MolecularKeyboardShortcuts';
 import { PubMedSearchPanel } from './PubMedSearchPanel';
+import { DiseaseAnalysisPanel } from './DiseaseAnalysisPanel';
+import { AIMoleculeDesignerPanel } from './AIMoleculeDesignerPanel';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
 import { ActiveLearningPanel } from './ActiveLearningPanel';
 import { useMolecularStore } from '../../store/molecularStore';
+import { ExtractedMolecule } from '../../utils/moleculeExtractor';
+import { DesignedMolecule } from '../../utils/aiMoleculeDesigner';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { X, FlaskConical } from 'lucide-react';
@@ -17,7 +21,22 @@ import { X, FlaskConical } from 'lucide-react';
 export const MolecularApp: React.FC = () => {
   const [showPhysicsEditor, setShowPhysicsEditor] = useState(false);
   const [showKeyboardShortcuts, setShowKeyboardShortcuts] = useState(false);
-  const { loadMoleculeTemplate } = useMolecularStore();
+  const { loadMoleculeTemplate, loadExtractedMolecules } = useMolecularStore();
+
+  const handleMoleculesExtracted = (molecules: ExtractedMolecule[]) => {
+    if (molecules.length > 0) {
+      loadExtractedMolecules(molecules);
+      toast.success(`${molecules.length} moléculas carregadas do PubMed! 🧬`, {
+        description: `Moléculas: ${molecules.slice(0, 3).map(m => m.name).join(', ')}${molecules.length > 3 ? '...' : ''}`,
+      });
+    }
+  };
+
+  const handleMoleculeDesigned = (molecule: DesignedMolecule) => {
+    toast.success(`Molécula projetada com IA carregada! 🤖`, {
+      description: `${molecule.name} - Drug-likeness: ${(molecule.drugLikeness.score * 100).toFixed(0)}%`,
+    });
+  };
 
   useEffect(() => {
     // Load a default molecule when the app starts
@@ -110,9 +129,15 @@ export const MolecularApp: React.FC = () => {
       <div className="flex-1 relative overflow-hidden">
         <MoleculeViewer3D />
         
-        {/* PubMed Search Panel - Positioned on the left side */}
-        <div className="absolute top-4 left-4 z-10">
-          <PubMedSearchPanel />
+        {/* Left Side Panels */}
+        <div className="absolute top-4 left-4 z-10 space-y-4">
+          <PubMedSearchPanel onMoleculesExtracted={handleMoleculesExtracted} />
+          <DiseaseAnalysisPanel onMoleculeLoad={handleMoleculesExtracted} />
+        </div>
+        
+        {/* Center Panel - AI Molecule Designer */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <AIMoleculeDesignerPanel onMoleculeDesigned={handleMoleculeDesigned} />
         </div>
         
         {/* Analysis Panel - Positioned on the right side */}
