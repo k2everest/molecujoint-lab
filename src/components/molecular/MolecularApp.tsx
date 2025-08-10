@@ -111,7 +111,7 @@ export const MolecularApp: React.FC = () => {
         </div>
         
         {/* Active Learning Panel - Positioned on the bottom right */}
-        <div className="absolute bottom-4 right-4 z-10">
+        <div className="absolute bottom-20 right-4 z-10">
           <ActiveLearningPanel />
         </div>
       </div>

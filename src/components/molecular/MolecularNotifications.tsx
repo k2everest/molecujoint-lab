@@ -53,7 +53,16 @@ export const MolecularNotifications: React.FC<MolecularNotificationsProps> = ({ 
   }, []);
 
   const removeNotification = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    // Add fade out animation before removing
+    const notification = document.querySelector(`[data-notification-id="${id}"]`);
+    if (notification) {
+      notification.classList.add('animate-fade-out-notification');
+      setTimeout(() => {
+        setNotifications(prev => prev.filter(n => n.id !== id));
+      }, 300);
+    } else {
+      setNotifications(prev => prev.filter(n => n.id !== id));
+    }
   };
 
   const getIcon = (type: Notification['type']) => {
@@ -74,15 +83,15 @@ export const MolecularNotifications: React.FC<MolecularNotificationsProps> = ({ 
   const getTypeColor = (type: Notification['type']) => {
     switch (type) {
       case 'success':
-        return 'border-l-green-500 bg-green-100';
+        return 'border-l-green-500 bg-green-50/90 dark:bg-green-900/20';
       case 'warning':
-        return 'border-l-yellow-500 bg-yellow-100';
+        return 'border-l-yellow-500 bg-yellow-50/90 dark:bg-yellow-900/20';
       case 'info':
-        return 'border-l-blue-500 bg-blue-100';
+        return 'border-l-blue-500 bg-blue-50/90 dark:bg-blue-900/20';
       case 'calculation':
-        return 'border-l-purple-500 bg-purple-100';
+        return 'border-l-purple-500 bg-purple-50/90 dark:bg-purple-900/20';
       default:
-        return 'border-l-blue-500 bg-blue-100';
+        return 'border-l-blue-500 bg-blue-50/90 dark:bg-blue-900/20';
     }
   };
 
@@ -93,14 +102,15 @@ export const MolecularNotifications: React.FC<MolecularNotificationsProps> = ({ 
   return (
     <div className={cn("fixed top-4 left-4 z-50 space-y-2 max-w-sm", className)}>
       {notifications.map((notification) => (
-        <Card 
+        <Card
           key={notification.id}
+          data-notification-id={notification.id}
           className={cn(
-            "border-l-4 shadow-lg animate-slide-in-left bg-card",
+            "border-l-4 shadow-lg animate-slide-in-notification bg-card/95 backdrop-blur-sm border border-border/50 hover:shadow-xl transition-all duration-200",
             getTypeColor(notification.type)
           )}
         >
-          <CardContent className="p-4">
+          <CardContent className="p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 flex-1">
                 <div className="mt-0.5">
@@ -108,18 +118,18 @@ export const MolecularNotifications: React.FC<MolecularNotificationsProps> = ({ 
                 </div>
                 <div className="flex-1 space-y-1">
                   <div className="flex items-center gap-2">
-                    <h4 className="text-sm font-semibold text-card-foreground">
+                    <h4 className="text-sm font-semibold text-foreground">
                       {notification.title}
                     </h4>
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="secondary" className="text-xs h-5">
                       {notification.type}
                     </Badge>
                   </div>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-muted-foreground leading-relaxed">
                     {notification.message}
                   </p>
                   <div className="text-xs text-muted-foreground">
-                    {notification.timestamp.toLocaleTimeString()}
+                    {notification.timestamp.toLocaleTimeString('pt-BR')}
                   </div>
                 </div>
               </div>
@@ -127,7 +137,8 @@ export const MolecularNotifications: React.FC<MolecularNotificationsProps> = ({ 
                 variant="ghost"
                 size="sm"
                 onClick={() => removeNotification(notification.id)}
-                className="h-6 w-6 p-0 hover:bg-muted"
+                className="h-6 w-6 p-0 hover:bg-destructive/10 hover:text-destructive transition-colors"
+                title="Fechar notificação"
               >
                 <X className="w-3 h-3" />
               </Button>

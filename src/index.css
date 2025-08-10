@@ -196,11 +196,41 @@ All colors MUST be HSL for perfect theming.
     50% { opacity: 0.6; transform: scale(1.05); }
   }
 
+  @keyframes slideInNotification {
+    0% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+    100% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes fadeOutNotification {
+    0% {
+      transform: translateX(0);
+      opacity: 1;
+    }
+    100% {
+      transform: translateX(-100%);
+      opacity: 0;
+    }
+  }
+
   .animate-molecular-float {
     animation: molecularFloat 4s ease-in-out infinite;
   }
 
   .animate-orbital-pulse {
     animation: orbitalPulse 2s ease-in-out infinite;
+  }
+
+  .animate-slide-in-notification {
+    animation: slideInNotification 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .animate-fade-out-notification {
+    animation: fadeOutNotification 0.3s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 }
