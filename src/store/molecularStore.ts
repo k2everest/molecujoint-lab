@@ -339,7 +339,8 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     const iterations = 100; // Number of optimization steps
 
     for (let i = 0; i < iterations; i++) {
-      const forces = physics.calculateForces(currentMolecule);
+      const forceResult = physics.calculateForces(currentMolecule);
+      const forces = forceResult.atomForces;
       const optimizedAtoms = currentMolecule.atoms.map((atom, idx) => {
         const force = forces[idx];
         return {
