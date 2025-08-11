@@ -5,6 +5,8 @@ export interface Atom {
   color: string;
   radius: number;
   charge?: number;
+  velocity?: [number, number, number];
+  force?: [number, number, number];
 }
 
 export interface Bond {
@@ -13,6 +15,7 @@ export interface Bond {
   atom2Id: string;
   bondType: 'single' | 'double' | 'triple';
   length: number;
+  type?: 'single' | 'double' | 'triple';
 }
 
 export interface Molecule {
@@ -23,6 +26,19 @@ export interface Molecule {
   formula?: string;
   energy?: number;
   dipoleMoment?: number;
+  properties?: {
+    totalEnergy: number;
+    dipoleMoment: number;
+    centerOfMass: [number, number, number];
+  };
+  metadata?: {
+    source?: string;
+    type?: string;
+    mechanism?: string;
+    target?: string;
+    confidence?: number;
+    formula?: string;
+  };
 }
 
 export interface MolecularSystem {

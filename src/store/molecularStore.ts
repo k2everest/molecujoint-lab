@@ -30,6 +30,7 @@ interface MolecularStore extends MolecularSystem {
   calculateTorsion: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string, atom4Id: string) => number | null;
   detectHydrogenBonds: (moleculeId: string) => { donor: Atom; acceptor: Atom; hydrogen: Atom; distance: number; angle: number }[];
   loadExtractedMolecules: (extractedMolecules: ExtractedMolecule[]) => void;
+  loadMolecule: (molecule: any) => void;
   createMoleculeFromFormula: (formula: string, name: string) => Molecule | null;
   clear: () => void;
 }
@@ -430,18 +431,6 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
           name: extracted.name,
           atoms: [],
           bonds: [],
-          properties: {
-            totalEnergy: 0,
-            dipoleMoment: 0,
-            centerOfMass: [0, 0, 0]
-          },
-          metadata: {
-            source: 'PubMed',
-            type: extracted.type,
-            mechanism: extracted.mechanism,
-            target: extracted.target,
-            confidence: extracted.confidence
-          }
         };
         newMolecules.push(placeholderMolecule);
       }
@@ -489,8 +478,8 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
                 0
               ],
               charge: 0,
-              velocity: [0, 0, 0],
-              force: [0, 0, 0]
+              color: elementData.color,
+              radius: elementData.radius
             });
             atomIndex++;
           }
@@ -504,9 +493,8 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
           id: generateId(),
           atom1Id: atoms[i].id,
           atom2Id: atoms[i + 1].id,
-          type: 'single',
-          length: 1.5,
-          strength: 1.0
+          bondType: 'single',
+          length: 1.5
         });
       }
 
@@ -515,15 +503,7 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
         name: name || `Molecule ${formula}`,
         atoms,
         bonds,
-        properties: {
-          totalEnergy: 0,
-          dipoleMoment: 0,
-          centerOfMass: [0, 0, 0]
-        },
-        metadata: {
-          source: 'PubMed',
-          formula
-        }
+        formula
       };
 
       return molecule;
@@ -533,9 +513,39 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     }
   },
 
-  clear: () => set({
-    molecules: [],
-    activeMoleculeId: null,
-  }),
-};
+  clear: () => set({ molecules: [], activeMoleculeId: null }),
+
+  loadMolecule: (moleculeData: any) => {
+    const moleculeId = generateId();
+    
+    const atoms: Atom[] = moleculeData.atoms?.map((atom: any, index: number) => ({
+      id: `${moleculeId}-atom-${index}`,
+      element: atom.symbol || atom.element || 'C',
+      position: [atom.x || 0, atom.y || 0, atom.z || 0] as [number, number, number],
+      color: ELEMENT_DATA[atom.symbol || atom.element || 'C']?.color || '#CCCCCC',
+      radius: ELEMENT_DATA[atom.symbol || atom.element || 'C']?.radius || 0.5,
+      charge: 0
+    })) || [];
+
+    const bonds: Bond[] = moleculeData.bonds?.map((bond: any, index: number) => ({
+      id: `${moleculeId}-bond-${index}`,
+      atom1Id: atoms[bond.from]?.id || '',
+      atom2Id: atoms[bond.to]?.id || '',
+      bondType: 'single' as const,
+      length: 1.5
+    })) || [];
+
+    const molecule: Molecule = {
+      id: moleculeId,
+      name: moleculeData.name || 'Unknown Molecule',
+      atoms,
+      bonds
+    };
+
+    set((state) => ({
+      molecules: [molecule],
+      activeMoleculeId: moleculeId
+    }));
+  },
+  };
 });

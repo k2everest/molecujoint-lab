@@ -67,7 +67,7 @@ export const MolecularApp: React.FC = () => {
         onClose={() => removePanel('disease')}
         zIndex={panels.find(p => p.id === 'disease')?.zIndex || 10}
       >
-        <DiseaseAnalysisPanel onMoleculeLoad={handleMoleculesExtracted} />
+        <DiseaseAnalysisPanel onMoleculeLoad={(molecule) => handleMoleculesExtracted([molecule])} />
       </DraggablePanel>
     ));
   };
