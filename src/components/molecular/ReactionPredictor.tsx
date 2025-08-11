@@ -79,9 +79,9 @@ export const ReactionPredictor: React.FC = () => {
     if (lastAtomMovement && activeMolecule) {
       predictMovementConsequences(lastAtomMovement, activeMolecule);
     }
-  }, [lastAtomMovement, activeMolecule]);
+  }, [lastAtomMovement, activeMolecule, calculateEnergyChange, calculateStrainEnergy, analyzeBondChanges, predictReaction]);
 
-  const calculateEnergyChange = (movement: { oldPosition: [number, number, number]; newPosition: [number, number, number] }, molecule: Molecule): number => {
+  const calculateEnergyChange = useCallback((movement: { oldPosition: [number, number, number]; newPosition: [number, number, number] }, molecule: Molecule): number => {
     // Simulação simplificada de mudança de energia
     const distanceFromEquilibrium = Math.sqrt(
       Math.pow(movement.newPosition[0] - movement.oldPosition[0], 2) +
@@ -90,9 +90,9 @@ export const ReactionPredictor: React.FC = () => {
     );
     
     return distanceFromEquilibrium * 15 + Math.random() * 20;
-  };
+  }, []);
 
-  const calculateStrainEnergy = (movement: { atomId: string; newPosition: [number, number, number] }, molecule: Molecule): number => {
+  const calculateStrainEnergy = useCallback((movement: { atomId: string; newPosition: [number, number, number] }, molecule: Molecule): number => {
     // Calcular energia de deformação baseada na mudança de geometria
     const atom = molecule.atoms.find(a => a.id === movement.atomId);
     if (!atom) return 0;
@@ -117,9 +117,9 @@ export const ReactionPredictor: React.FC = () => {
     });
 
     return strain;
-  };
+  }, [getIdealBondLength]);
 
-  const analyzeBondChanges = (movement: { atomId: string; newPosition: [number, number, number] }, molecule: Molecule) => {
+  const analyzeBondChanges = useCallback((movement: { atomId: string; newPosition: [number, number, number] }, molecule: Molecule) => {
     const broken: string[] = [];
     const formed: string[] = [];
     const weakened: string[] = [];
@@ -147,29 +147,29 @@ export const ReactionPredictor: React.FC = () => {
     });
 
     return { broken, formed, weakened };
-  };
+  }, []);
 
-  const predictReaction = (molecule: Molecule, movement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] }): ReactionPrediction => {
-    const hasElectrophile = molecule.atoms.some(a => ['C'].includes(a.element) && a.charge && a.charge > 0);
-    const hasNucleophile = molecule.atoms.some(a => ['N', 'O', 'S'].includes(a.element));
-    const hasLeavingGroup = molecule.atoms.some(a => ['Cl', 'Br', 'I'].includes(a.element));
+  const predictReaction = useCallback((molecule: Molecule, movement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] }): ReactionPrediction => {
+    const hasElectrophile = molecule.atoms.some(a => [\'C\'].includes(a.element) && a.charge && a.charge > 0);
+    const hasNucleophile = molecule.atoms.some(a => [\'N\', \'O\', \'S\'].includes(a.element));
+    const hasLeavingGroup = molecule.atoms.some(a => [\'Cl\', \'Br\', \'I\'].includes(a.element));
 
-    let type: ReactionPrediction['type'] = 'favorable';
-    let mechanism = 'Geometric rearrangement';
-    let products = ['Rearranged molecule'];
+    let type: ReactionPrediction[\'type\'] = \'favorable\';
+    let mechanism = \'Geometric rearrangement\';
+    let products = [\'Rearranged molecule\'];
     const warnings: string[] = [];
 
     if (hasElectrophile && hasNucleophile) {
-      mechanism = 'Nucleophilic substitution (SN2)';
-      products = ['Substituted product', 'Leaving group'];
-      type = 'reactive';
-      warnings.push('High reactivity expected');
+      mechanism = \'Nucleophilic substitution (SN2)\';
+      products = [\'Substituted product\', \'Leaving group\'];
+      type = \'reactive\';
+      warnings.push(\'High reactivity expected\');
     }
 
     if (hasLeavingGroup) {
-      mechanism = 'Elimination reaction (E2)';
-      products = ['Alkene', 'Hydrogen halide'];
-      warnings.push('Base required for elimination');
+      mechanism = \'Elimination reaction (E2)\';
+      products = [\'Alkene\', \'Hydrogen halide\'];
+      warnings.push(\'Base required for elimination\');
     }
 
     return {
@@ -181,7 +181,7 @@ export const ReactionPredictor: React.FC = () => {
       mechanism,
       warnings
     };
-  };
+  }, []);
 
   const getIdealBondLength = (element1: string, element2: string, bondType: string): number => {
     const bondLengths: Record<string, Record<string, number>> = {
