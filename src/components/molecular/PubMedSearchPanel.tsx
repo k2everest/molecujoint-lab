@@ -432,14 +432,5 @@ export const PubMedSearchPanel: React.FC<PubMedSearchPanelProps> = ({
         )}
 
         {/* Help Text */}
-        {!isExpanded && articles.length === 0 && (
-          <div className="text-xs text-muted-foreground text-center py-4">
-            <BookOpen className="w-8 h-8 mx-auto mb-2 opacity-50" />
-            <p>Busque artigos científicos relacionados às suas moléculas</p>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
-};
-
+        {!isExpanded &&
+(Content truncated due to size limit. Use page ranges or line ranges to read remaining content)
