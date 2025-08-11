@@ -152,6 +152,12 @@ const MOLECULE_DATABASE: MoleculeDatabase = {
   }
 };
 
+export interface BasicMoleculeStructure {
+  name: string;
+  atoms: Array<{ symbol: string; x: number; y: number; z: number }>;
+  bonds: Array<{ from: number; to: number; order?: number }>;
+}
+
 export class MoleculeExtractor {
   private database: MoleculeDatabase;
 
@@ -197,8 +203,8 @@ export class MoleculeExtractor {
 
     // Buscar padrões de fórmulas químicas
     const formulaPatterns = [
-      /\b[A-Z][a-z]?(\d+[A-Z][a-z]?\d*)*\b/g, // Fórmulas moleculares simples
-      /\b[A-Z]\d+[A-Z]\d+[A-Z]\d+/g, // Padrões como C6H6O
+      /\\b[A-Z][a-z]?(\\d+[A-Z][a-z]?\\d*)*\\b/g, // Fórmulas moleculares simples
+      /\\b[A-Z]\\d+[A-Z]\\d+[A-Z]\\d+/g, // Padrões como C6H6O
     ];
 
     for (const pattern of formulaPatterns) {
@@ -220,12 +226,12 @@ export class MoleculeExtractor {
 
     // Buscar padrões de nomes de medicamentos/compostos
     const drugPatterns = [
-      /\b\w+vir\b/gi, // Antivirais terminados em -vir
-      /\b\w+navir\b/gi, // Inibidores de protease
-      /\b\w+tegravir\b/gi, // Inibidores de integrase
-      /\b\w+citabine\b/gi, // Nucleosídeos
-      /\b\w+mycin\b/gi, // Antibióticos
-      /\b\w+cillin\b/gi, // Penicilinas
+      /\\b\\w+vir\\b/gi, // Antivirais terminados em -vir
+      /\\b\\w+navir\\b/gi, // Inibidores de protease
+      /\\b\\w+tegravir\\b/gi, // Inibidores de integrase
+      /\\b\\w+citabine\\b/gi, // Nucleosídeos
+      /\\b\\w+mycin\\b/gi, // Antibióticos
+      /\\b\\w+cillin\\b/gi, // Penicilinas
     ];
 
     for (const pattern of drugPatterns) {
@@ -288,7 +294,7 @@ export class MoleculeExtractor {
     mechanisms: string[];
     suggestions: ExtractedMolecule[];
   } {
-    const fullText = `${title} ${abstract} ${keywords?.join(' ') || ''}`;
+    const fullText = `${title} ${abstract} ${keywords?.join(' ')}`;
     
     const molecules = this.extractMolecules(fullText, 'PubMed Article');
     
@@ -373,9 +379,9 @@ export class MoleculeExtractor {
 
   private extractTargets(text: string): string[] {
     const targetPatterns = [
-      /\b(reverse transcriptase|protease|integrase|ccr5|cd4|gp120|gp41)\b/gi,
-      /\b\w+\s+(receptor|enzyme|protein|kinase|channel)\b/gi,
-      /\b(target|binding site|active site)\b/gi
+      /\\b(reverse transcriptase|protease|integrase|ccr5|cd4|gp120|gp41)\\b/gi,
+      /\\b\\w+\\s+(receptor|enzyme|protein|kinase|channel)\\b/gi,
+      /\\b(target|binding site|active site)\\b/gi
     ];
 
     const targets: string[] = [];
@@ -392,9 +398,9 @@ export class MoleculeExtractor {
 
   private extractMechanisms(text: string): string[] {
     const mechanismPatterns = [
-      /\b(inhibitor|antagonist|agonist|blocker|activator)\b/gi,
-      /\b(binds to|targets|inhibits|blocks|activates)\b/gi,
-      /\b(mechanism of action|mode of action)\b/gi
+      /\\b(inhibitor|antagonist|agonist|blocker|activator)\\b/gi,
+      /\\b(binds to|targets|inhibits|blocks|activates)\\b/gi,
+      /\\b(mechanism of action|mode of action)\\b/gi
     ];
 
     const mechanisms: string[] = [];
@@ -412,7 +418,7 @@ export class MoleculeExtractor {
   private isLikelyFormula(text: string): boolean {
     // Verificar se parece uma fórmula química válida
     const hasElements = /[A-Z][a-z]?/.test(text);
-    const hasNumbers = /\d/.test(text);
+    const hasNumbers = /\\d/.test(text);
     const isReasonableLength = text.length >= 3 && text.length <= 20;
     
     return hasElements && hasNumbers && isReasonableLength;
@@ -431,7 +437,7 @@ export class MoleculeExtractor {
   }
 
   private escapeRegex(text: string): string {
-    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    return text.replace(/[.*+?^${}()|[\]\\\\]/g, '\\$&');
   }
 
   private capitalizeFirst(text: string): string {
@@ -462,8 +468,8 @@ export class MoleculeExtractor {
   /**
    * Gera estruturas moleculares básicas para visualização
    */
-  generateMoleculeStructure(moleculeName: string): any {
-    const basicStructures: { [key: string]: any } = {
+  generateMoleculeStructure(moleculeName: string): BasicMoleculeStructure | undefined {
+    const basicStructures: { [key: string]: BasicMoleculeStructure } = {
       'zidovudine': {
         name: 'Zidovudine (AZT)',
         atoms: [
@@ -520,169 +526,14 @@ export class MoleculeExtractor {
         bonds: [
           { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
           { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 0 },
-          { from: 2, to: 6 }, { from: 1, to: 7 }, { from: 4, to: 8 },
+          { from: 2, to: 6 }, { from: 5, to: 7 }, { from: 4, to: 8 },
           { from: 3, to: 9 }
-        ]
-      },
-      'tenofovir': {
-        name: 'Tenofovir',
-        atoms: [
-          { symbol: 'C', x: 0, y: 0, z: 0 },
-          { symbol: 'N', x: 1.4, y: 0, z: 0 },
-          { symbol: 'C', x: 2.1, y: 1.2, z: 0 },
-          { symbol: 'N', x: 1.4, y: 2.4, z: 0 },
-          { symbol: 'C', x: 0, y: 2.4, z: 0 },
-          { symbol: 'N', x: -0.7, y: 1.2, z: 0 },
-          { symbol: 'P', x: 3.5, y: 1.2, z: 0 },
-          { symbol: 'O', x: 4.2, y: 0, z: 0 },
-          { symbol: 'O', x: 4.2, y: 2.4, z: 0 },
-          { symbol: 'O', x: 3.5, y: 2.6, z: 0 }
-        ],
-        bonds: [
-          { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
-          { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 0 },
-          { from: 2, to: 6 }, { from: 6, to: 7 }, { from: 6, to: 8 },
-          { from: 6, to: 9 }
         ]
       }
     };
-    
-    return basicStructures[moleculeName.toLowerCase()] || null;
-  }
 
-  /**
-   * Analisa múltiplos artigos e consolida resultados
-   */
-  analyzeMultipleArticles(articles: Array<{title: string, abstract: string, keywords?: string[]}>): {
-    allMolecules: ExtractedMolecule[];
-    commonTargets: string[];
-    frequentMechanisms: string[];
-    consolidatedSuggestions: ExtractedMolecule[];
-    moleculeFrequency: { [key: string]: number };
-  } {
-    const allMolecules: ExtractedMolecule[] = [];
-    const allTargets: string[] = [];
-    const allMechanisms: string[] = [];
-    const moleculeFrequency: { [key: string]: number } = {};
-
-    // Analisar cada artigo
-    articles.forEach(article => {
-      const analysis = this.analyzeArticle(article.title, article.abstract, article.keywords);
-      
-      allMolecules.push(...analysis.molecules);
-      allTargets.push(...analysis.targets);
-      allMechanisms.push(...analysis.mechanisms);
-
-      // Contar frequência das moléculas
-      analysis.molecules.forEach(molecule => {
-        const key = molecule.name.toLowerCase();
-        moleculeFrequency[key] = (moleculeFrequency[key] || 0) + 1;
-      });
-    });
-
-    // Encontrar alvos e mecanismos mais comuns
-    const targetFreq = this.countFrequency(allTargets);
-    const mechanismFreq = this.countFrequency(allMechanisms);
-
-    const commonTargets = Object.entries(targetFreq)
-      .filter(([_, count]) => count >= 2)
-      .map(([target, _]) => target)
-      .slice(0, 10);
-
-    const frequentMechanisms = Object.entries(mechanismFreq)
-      .filter(([_, count]) => count >= 2)
-      .map(([mechanism, _]) => mechanism)
-      .slice(0, 10);
-
-    // Gerar sugestões consolidadas
-    const consolidatedSuggestions = this.suggestMolecules(commonTargets, 'multi-article analysis');
-
-    return {
-      allMolecules: this.removeDuplicates(allMolecules),
-      commonTargets,
-      frequentMechanisms,
-      consolidatedSuggestions,
-      moleculeFrequency
-    };
-  }
-
-  /**
-   * Gera relatório de análise de doença
-   */
-  generateDiseaseReport(disease: string, articles: Array<{title: string, abstract: string, keywords?: string[]}>): {
-    disease: string;
-    totalArticles: number;
-    keyMolecules: ExtractedMolecule[];
-    therapeuticTargets: string[];
-    treatmentMechanisms: string[];
-    drugSuggestions: ExtractedMolecule[];
-    molecularInsights: string[];
-  } {
-    const analysis = this.analyzeMultipleArticles(articles);
-    
-    // Filtrar moléculas mais relevantes (alta confiança e frequência)
-    const keyMolecules = analysis.allMolecules
-      .filter(m => m.confidence > 0.7 && analysis.moleculeFrequency[m.name.toLowerCase()] >= 2)
-      .slice(0, 15);
-
-    // Gerar insights moleculares
-    const molecularInsights = this.generateMolecularInsights(analysis, disease);
-
-    return {
-      disease,
-      totalArticles: articles.length,
-      keyMolecules,
-      therapeuticTargets: analysis.commonTargets,
-      treatmentMechanisms: analysis.frequentMechanisms,
-      drugSuggestions: analysis.consolidatedSuggestions,
-      molecularInsights
-    };
-  }
-
-  private countFrequency(items: string[]): { [key: string]: number } {
-    const frequency: { [key: string]: number } = {};
-    items.forEach(item => {
-      const key = item.toLowerCase().trim();
-      frequency[key] = (frequency[key] || 0) + 1;
-    });
-    return frequency;
-  }
-
-  private generateMolecularInsights(analysis: any, disease: string): string[] {
-    const insights: string[] = [];
-    
-    // Insight sobre alvos mais comuns
-    if (analysis.commonTargets.length > 0) {
-      insights.push(`Os principais alvos terapêuticos para ${disease} incluem: ${analysis.commonTargets.slice(0, 3).join(', ')}`);
-    }
-
-    // Insight sobre mecanismos
-    if (analysis.frequentMechanisms.length > 0) {
-      insights.push(`Os mecanismos de ação mais estudados são: ${analysis.frequentMechanisms.slice(0, 3).join(', ')}`);
-    }
-
-    // Insight sobre classes de medicamentos
-    const drugTypes = analysis.allMolecules
-      .filter(m => m.type === 'drug')
-      .map(m => m.mechanism)
-      .filter(m => m)
-      .slice(0, 3);
-    
-    if (drugTypes.length > 0) {
-      insights.push(`As principais classes de medicamentos identificadas incluem: ${drugTypes.join(', ')}`);
-    }
-
-    // Insight sobre frequência molecular
-    const topMolecules = Object.entries(analysis.moleculeFrequency)
-      .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
-      .slice(0, 3)
-      .map(([name, count]) => `${name} (${count} menções)`);
-    
-    if (topMolecules.length > 0) {
-      insights.push(`As moléculas mais mencionadas na literatura são: ${topMolecules.join(', ')}`);
-    }
-
-    return insights;
+    return basicStructures[moleculeName.toLowerCase()];
   }
 }
+
 

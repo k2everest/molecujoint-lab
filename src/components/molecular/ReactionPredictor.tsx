@@ -40,48 +40,48 @@ export const ReactionPredictor: React.FC = () => {
   const activeMolecule = molecules.find(m => m.id === activeMoleculeId);
 
   useEffect(() => {
+    const predictMovementConsequences = async (movement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] }, molecule: Molecule) => {
+      setAnalyzing(true);
+      
+      // Simular análise de consequências de movimento
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      const energyChange = calculateEnergyChange(movement, molecule);
+      const strainEnergy = calculateStrainEnergy(movement, molecule);
+      const bondChanges = analyzeBondChanges(movement, molecule);
+      
+      const movementPrediction: MovementPrediction = {
+        isAllowed: strainEnergy < 50 && energyChange < 100,
+        energyChange,
+        strainEnergy,
+        bondChanges,
+        stability: strainEnergy < 20 ? 'stable' : strainEnergy < 50 ? 'metastable' : 'unstable',
+        reactionPath: energyChange > 50 ? 'SN2 displacement possible' : undefined
+      };
+
+      setPrediction(movementPrediction);
+      
+      if (!movementPrediction.isAllowed) {
+        toast.error(`Movimento não recomendado: alta energia de deformação (${strainEnergy.toFixed(1)} kcal/mol)`);
+      } else if (movementPrediction.reactionPath) {
+        toast.warning(`Possível reação: ${movementPrediction.reactionPath}`);
+      }
+
+      // Prever reações possíveis
+      if (energyChange > 30) {
+        const reaction = predictReaction(molecule, movement);
+        setReactionPrediction(reaction);
+      }
+
+      setAnalyzing(false);
+    };
+
     if (lastAtomMovement && activeMolecule) {
       predictMovementConsequences(lastAtomMovement, activeMolecule);
     }
   }, [lastAtomMovement, activeMolecule]);
 
-  const predictMovementConsequences = async (movement: any, molecule: Molecule) => {
-    setAnalyzing(true);
-    
-    // Simular análise de consequências de movimento
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const energyChange = calculateEnergyChange(movement, molecule);
-    const strainEnergy = calculateStrainEnergy(movement, molecule);
-    const bondChanges = analyzeBondChanges(movement, molecule);
-    
-    const movementPrediction: MovementPrediction = {
-      isAllowed: strainEnergy < 50 && energyChange < 100,
-      energyChange,
-      strainEnergy,
-      bondChanges,
-      stability: strainEnergy < 20 ? 'stable' : strainEnergy < 50 ? 'metastable' : 'unstable',
-      reactionPath: energyChange > 50 ? 'SN2 displacement possible' : undefined
-    };
-
-    setPrediction(movementPrediction);
-    
-    if (!movementPrediction.isAllowed) {
-      toast.error(`Movimento não recomendado: alta energia de deformação (${strainEnergy.toFixed(1)} kcal/mol)`);
-    } else if (movementPrediction.reactionPath) {
-      toast.warning(`Possível reação: ${movementPrediction.reactionPath}`);
-    }
-
-    // Prever reações possíveis
-    if (energyChange > 30) {
-      const reaction = predictReaction(molecule, movement);
-      setReactionPrediction(reaction);
-    }
-
-    setAnalyzing(false);
-  };
-
-  const calculateEnergyChange = (movement: any, molecule: Molecule): number => {
+  const calculateEnergyChange = (movement: { oldPosition: [number, number, number]; newPosition: [number, number, number] }, molecule: Molecule): number => {
     // Simulação simplificada de mudança de energia
     const distanceFromEquilibrium = Math.sqrt(
       Math.pow(movement.newPosition[0] - movement.oldPosition[0], 2) +
@@ -92,7 +92,7 @@ export const ReactionPredictor: React.FC = () => {
     return distanceFromEquilibrium * 15 + Math.random() * 20;
   };
 
-  const calculateStrainEnergy = (movement: any, molecule: Molecule): number => {
+  const calculateStrainEnergy = (movement: { atomId: string; newPosition: [number, number, number] }, molecule: Molecule): number => {
     // Calcular energia de deformação baseada na mudança de geometria
     const atom = molecule.atoms.find(a => a.id === movement.atomId);
     if (!atom) return 0;
@@ -119,7 +119,7 @@ export const ReactionPredictor: React.FC = () => {
     return strain;
   };
 
-  const analyzeBondChanges = (movement: any, molecule: Molecule) => {
+  const analyzeBondChanges = (movement: { atomId: string; newPosition: [number, number, number] }, molecule: Molecule) => {
     const broken: string[] = [];
     const formed: string[] = [];
     const weakened: string[] = [];
@@ -149,7 +149,7 @@ export const ReactionPredictor: React.FC = () => {
     return { broken, formed, weakened };
   };
 
-  const predictReaction = (molecule: Molecule, movement: any): ReactionPrediction => {
+  const predictReaction = (molecule: Molecule, movement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] }): ReactionPrediction => {
     const hasElectrophile = molecule.atoms.some(a => ['C'].includes(a.element) && a.charge && a.charge > 0);
     const hasNucleophile = molecule.atoms.some(a => ['N', 'O', 'S'].includes(a.element));
     const hasLeavingGroup = molecule.atoms.some(a => ['Cl', 'Br', 'I'].includes(a.element));

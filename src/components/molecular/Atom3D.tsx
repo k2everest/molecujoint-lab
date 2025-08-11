@@ -51,7 +51,7 @@ export const Atom3D: React.FC<Atom3DProps> = ({
     }
   };
 
-  const handlePointerDown = (event: any) => {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     setIsDragging(true);
     onSelect?.();
@@ -63,7 +63,7 @@ export const Atom3D: React.FC<Atom3DProps> = ({
     gl.domElement.style.cursor = hovered ? 'pointer' : 'auto';
   };
 
-  const handlePointerMove = (event: any) => {
+  const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
     if (isDragging && onDrag) {
       const newPosition: [number, number, number] = [
         event.point.x,

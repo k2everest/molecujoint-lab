@@ -82,10 +82,10 @@ export const MaterialsPredictor: React.FC = () => {
     toast.success(`${newPredictions.length} novos materiais preditos!`);
   };
 
-  const generateMaterialPredictions = (molecule: any): MaterialPrediction[] => {
+  const generateMaterialPredictions = (molecule: Molecule): MaterialPrediction[] => {
     const baseName = molecule.name || 'Composto';
-    const hasAromaticRings = molecule.atoms.some((atom: any) => atom.element === 'C');
-    const hasHeteroatoms = molecule.atoms.some((atom: any) => ['N', 'O', 'S'].includes(atom.element));
+    const hasAromaticRings = molecule.atoms.some((atom: Atom) => atom.element === 'C');
+    const hasHeteroatoms = molecule.atoms.some((atom: Atom) => ['N', 'O', 'S'].includes(atom.element));
     
     const predictions: MaterialPrediction[] = [];
 
@@ -162,7 +162,7 @@ export const MaterialsPredictor: React.FC = () => {
     return predictions;
   };
 
-  const generateBondingPredictions = (molecule: any): BondingPrediction[] => {
+  const generateBondingPredictions = (molecule: Molecule): BondingPrediction[] => {
     return [
       {
         type: 'covalent',

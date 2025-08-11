@@ -145,27 +145,27 @@ export const ElectronDensityVisualization: React.FC<ElectronDensityVisualization
     const normalizedDensity = Math.min(density / 0.1, 1); // Normalize to 0-1
     
     switch (scheme) {
-      case 'rainbow':
+      case 'rainbow': {
         // Rainbow color scheme
         const hue = (1 - normalizedDensity) * 240; // Blue to red
         return hslToRgb(hue / 360, 1, 0.5);
-        
-      case 'redBlue':
+      }
+      case 'redBlue': {
         // Red-blue color scheme
         return {
           r: normalizedDensity,
           g: 0,
           b: 1 - normalizedDensity
         };
-        
-      case 'grayscale':
+      }
+      case 'grayscale': {
         // Grayscale
         return {
           r: normalizedDensity,
           g: normalizedDensity,
           b: normalizedDensity
         };
-        
+      }
       default:
         return { r: 0.5, g: 0.5, b: 1 };
     }

@@ -290,7 +290,7 @@ Data: ${new Date().toLocaleDateString('pt-BR')}
 
               <div className="space-y-2">
                 <label className="text-sm font-medium">Estratégia de Design</label>
-                <Select value={designStrategy} onValueChange={(value: any) => setDesignStrategy(value)}>
+                <Select value={designStrategy} onValueChange={(value: 'scaffold_hopping' | 'fragment_linking' | 'structure_optimization' | 'bioisosterism') => setDesignStrategy(value)}>
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>

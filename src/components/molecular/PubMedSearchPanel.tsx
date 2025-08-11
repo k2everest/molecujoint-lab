@@ -180,7 +180,7 @@ export const PubMedSearchPanel: React.FC<PubMedSearchPanelProps> = ({
                     key={type.key}
                     variant={searchType === type.key ? "default" : "outline"}
                     size="sm"
-                    onClick={() => setSearchType(type.key as any)}
+                    onClick={() => setSearchType(type.key as 'molecule' | 'disease' | 'interaction' | 'drug_discovery' | 'custom')}
                     className="text-xs h-8"
                   >
                     {type.label}
