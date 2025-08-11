@@ -150,7 +150,7 @@ export const ReactionPredictor: React.FC = () => {
   }, []);
 
   const predictReaction = useCallback((molecule: Molecule, movement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] }): ReactionPrediction => {
-    const hasElectrophile = molecule.atoms.some(a => [\'C\'].includes(a.element) && a.charge && a.charge > 0);
+    const hasElectrophile = molecule.atoms.some(a => ["C"].includes(a.element) && a.charge && a.charge > 0);
     const hasNucleophile = molecule.atoms.some(a => [\'N\', \'O\', \'S\'].includes(a.element));
     const hasLeavingGroup = molecule.atoms.some(a => [\'Cl\', \'Br\', \'I\'].includes(a.element));
 
