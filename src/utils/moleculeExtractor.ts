@@ -674,7 +674,7 @@ export class MoleculeExtractor {
 
     // Insight sobre frequência molecular
     const topMolecules = Object.entries(analysis.moleculeFrequency)
-      .sort((a, b) => b[1] - a[1])
+      .sort((a: [string, number], b: [string, number]) => b[1] - a[1])
       .slice(0, 3)
       .map(([name, count]) => `${name} (${count} menções)`);
     
