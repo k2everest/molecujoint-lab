@@ -150,26 +150,25 @@ export const ReactionPredictor: React.FC = () => {
   }, []);
 
   const predictReaction = useCallback((molecule: Molecule, movement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] }): ReactionPrediction => {
-    const hasElectrophile = molecule.atoms.some(a => ["C"].includes(a.element) && a.charge && a.charge > 0);
-    const hasNucleophile = molecule.atoms.some(a => [\'N\', \'O\', \'S\'].includes(a.element));
-    const hasLeavingGroup = molecule.atoms.some(a => [\'Cl\', \'Br\', \'I\'].includes(a.element));
-
-    let type: ReactionPrediction[\'type\'] = \'favorable\';
-    let mechanism = \'Geometric rearrangement\';
-    let products = [\'Rearranged molecule\'];
+    const hasElectrophile = molecule.atoms.some(a => ['C'].includes(a.element) && a.charge && a.charge > 0);
+    const hasNucleophile = molecule.atoms.some(a => ['N', 'O', 'S'].includes(a.element));
+    const hasLeavingGroup = molecule.atoms.some(a => ['Cl', 'Br', 'I'].includes(a.element));
+    let type: ReactionPrediction['type'] = 'favorable';
+    let mechanism = "Geometric rearrangement";
+    let products = ["Rearranged molecule"];
     const warnings: string[] = [];
 
     if (hasElectrophile && hasNucleophile) {
-      mechanism = \'Nucleophilic substitution (SN2)\';
-      products = [\'Substituted product\', \'Leaving group\'];
-      type = \'reactive\';
-      warnings.push(\'High reactivity expected\');
+      mechanism = 'Nucleophilic substitution (SN2)';
+      products = ['Substituted product', 'Leaving group'];
+      type = 'reactive';
+      warnings.push('High reactivity expected');
     }
 
     if (hasLeavingGroup) {
-      mechanism = \'Elimination reaction (E2)\';
-      products = [\'Alkene\', \'Hydrogen halide\'];
-      warnings.push(\'Base required for elimination\');
+      mechanism = 'Elimination reaction (E2)';
+      products = ['Alkene', 'Hydrogen halide'];
+      warnings.push('Base required for elimination');
     }
 
     return {
@@ -322,3 +321,4 @@ export const ReactionPredictor: React.FC = () => {
     </Card>
   );
 };
+
