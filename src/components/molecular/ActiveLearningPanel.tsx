@@ -77,25 +77,50 @@ export const ActiveLearningPanel: React.FC = () => {
 
   const handleStartTraining = () => {
     toast.success('Iniciando treinamento do modelo de active learning...');
-    // Simulate training progress
+    setTrainingProgress(0);
+    
+    // Simulate realistic training process
+    const trainingSteps = [
+      { progress: 15, message: 'Preparando dados moleculares...' },
+      { progress: 30, message: 'Extraindo descritores químicos...' },
+      { progress: 50, message: 'Treinando modelo base...' },
+      { progress: 70, message: 'Otimizando hiperparâmetros...' },
+      { progress: 85, message: 'Validando predições...' },
+      { progress: 100, message: 'Modelo treinado com sucesso!' }
+    ];
+    
+    let stepIndex = 0;
     const interval = setInterval(() => {
-      setTrainingProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          toast.success('Modelo treinado com sucesso!');
-          return 100;
-        }
-        return prev + Math.random() * 5;
-      });
-    }, 500);
+      if (stepIndex < trainingSteps.length) {
+        const step = trainingSteps[stepIndex];
+        setTrainingProgress(step.progress);
+        toast.info(step.message);
+        stepIndex++;
+      } else {
+        clearInterval(interval);
+        toast.success('Active Learning ativo! Agora sugere moléculas promissoras.');
+      }
+    }, 1200);
   };
 
   const handleGeneratePredictions = () => {
     toast.success('Gerando predições para biblioteca molecular...');
+    
+    // Simulate ML prediction generation
+    setTimeout(() => {
+      toast.success('Nova biblioteca de 15.000 compostos preditos com sucesso!');
+      toast.info('Top candidatos: ZINC000005 (score: 9.2), ZINC000006 (score: 8.9)');
+    }, 2000);
   };
 
   const handleOptimizeModel = () => {
     toast.success('Otimizando hiperparâmetros do modelo...');
+    
+    // Simulate model optimization
+    setTimeout(() => {
+      toast.success('Otimização concluída! Accuracy melhorou de 87% para 94%');
+      // Update model accuracy in state if needed
+    }, 3000);
   };
 
   return (

@@ -6,6 +6,7 @@ import { SimulationSettings } from '../types/physics';
 import { ExtractedMolecule } from '../utils/moleculeExtractor';
 
 interface MolecularStore extends MolecularSystem {
+  lastAtomMovement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] } | null;
   // Actions
   addMolecule: (molecule: Molecule) => void;
   addMoleculeToCollection: (molecule: Molecule) => void;
@@ -45,6 +46,7 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     showLabels: true,
     showBonds: true,
     showHydrogens: true,
+    lastAtomMovement: null,
 
   addMolecule: (molecule) => set((state) => ({
     molecules: [molecule], // Substituir todas as moléculas pela nova
@@ -94,18 +96,28 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     ),
   })),
 
-  updateAtomPosition: (moleculeId, atomId, position) => set((state) => ({
-    molecules: state.molecules.map(molecule =>
-      molecule.id === moleculeId
-        ? {
-            ...molecule,
-            atoms: molecule.atoms.map(atom =>
-              atom.id === atomId ? { ...atom, position } : atom
-            ),
-          }
-        : molecule
-    ),
-  })),
+  updateAtomPosition: (moleculeId, atomId, position) => set((state) => {
+    const molecule = state.molecules.find(m => m.id === moleculeId);
+    const atom = molecule?.atoms.find(a => a.id === atomId);
+    
+    return {
+      molecules: state.molecules.map(molecule =>
+        molecule.id === moleculeId
+          ? {
+              ...molecule,
+              atoms: molecule.atoms.map(atom =>
+                atom.id === atomId ? { ...atom, position } : atom
+              ),
+            }
+          : molecule
+      ),
+      lastAtomMovement: atom ? {
+        atomId,
+        oldPosition: atom.position,
+        newPosition: position
+      } : null
+    };
+  }),
 
   addBond: (moleculeId, atom1Id, atom2Id, bondType = 'single') => set((state) => {
     const molecule = state.molecules.find(m => m.id === moleculeId);

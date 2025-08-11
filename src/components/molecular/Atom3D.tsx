@@ -11,6 +11,8 @@ interface Atom3DProps {
   isSelected?: boolean;
   onSelect?: () => void;
   onDrag?: (position: [number, number, number]) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 export const Atom3D: React.FC<Atom3DProps> = ({
