@@ -19,6 +19,16 @@ export interface MoleculeDatabase {
   };
 }
 
+export interface DiseaseReport {
+  disease: string;
+  totalArticles: number;
+  keyMolecules: ExtractedMolecule[];
+  therapeuticTargets: string[];
+  treatmentMechanisms: string[];
+  drugSuggestions: ExtractedMolecule[];
+  molecularInsights: string[];
+}
+
 // Base de dados de moléculas conhecidas (expandível)
 const MOLECULE_DATABASE: MoleculeDatabase = {
   // HIV Drugs
@@ -64,48 +74,6 @@ const MOLECULE_DATABASE: MoleculeDatabase = {
     mechanism: 'Nucleotide reverse transcriptase inhibitor',
     target: 'HIV reverse transcriptase'
   },
-  'emtricitabine': {
-    formula: 'C8H10FN3O3S',
-    type: 'drug',
-    synonyms: ['FTC', 'emtriva'],
-    mechanism: 'Nucleoside reverse transcriptase inhibitor',
-    target: 'HIV reverse transcriptase'
-  },
-  'abacavir': {
-    formula: 'C14H18N6O',
-    type: 'drug',
-    synonyms: ['ABC', 'ziagen'],
-    mechanism: 'Nucleoside reverse transcriptase inhibitor',
-    target: 'HIV reverse transcriptase'
-  },
-  'darunavir': {
-    formula: 'C27H37N3O7S',
-    type: 'drug',
-    synonyms: ['prezista'],
-    mechanism: 'Protease inhibitor',
-    target: 'HIV protease'
-  },
-  'raltegravir': {
-    formula: 'C20H21FN6O5',
-    type: 'drug',
-    synonyms: ['isentress'],
-    mechanism: 'Integrase strand transfer inhibitor',
-    target: 'HIV integrase'
-  },
-  'bictegravir': {
-    formula: 'C21H18F3N3O5',
-    type: 'drug',
-    synonyms: ['biktarvy'],
-    mechanism: 'Integrase strand transfer inhibitor',
-    target: 'HIV integrase'
-  },
-  'rilpivirine': {
-    formula: 'C22H18N6',
-    type: 'drug',
-    synonyms: ['edurant'],
-    mechanism: 'Non-nucleoside reverse transcriptase inhibitor',
-    target: 'HIV reverse transcriptase'
-  },
   
   // Common proteins and enzymes
   'reverse transcriptase': {
@@ -120,7 +88,7 @@ const MOLECULE_DATABASE: MoleculeDatabase = {
     mechanism: 'Cleaves viral polyproteins',
     target: 'HIV maturation'
   },
-    integrase: {
+  'integrase': {
     type: 'enzyme',
     synonyms: ['IN', 'HIV integrase'],
     mechanism: 'Integrates viral DNA into host genome',
@@ -130,12 +98,6 @@ const MOLECULE_DATABASE: MoleculeDatabase = {
     type: 'protein',
     synonyms: ['envelope protein', 'surface glycoprotein'],
     mechanism: 'Viral attachment protein',
-    target: 'HIV entry'
-  },
-  'gp41': {
-    type: 'protein',
-    synonyms: ['transmembrane protein'],
-    mechanism: 'Viral fusion protein',
     target: 'HIV entry'
   },
   'ccr5': {
@@ -183,8 +145,8 @@ export class MoleculeExtractor {
         if (matches) {
           const confidence = this.calculateConfidence(moleculeName, text, data.type);
           
-          // Só adicionar se a confiança for alta o suficiente e não for apenas uma menção genérica
-          if (confidence > 0.6 && this.isSpecificMention(text, moleculeName, data.type)) {
+          // Só adicionar se a confiança for alta o suficiente
+          if (confidence > 0.6) {
             molecules.push({
               name: this.capitalizeFirst(moleculeName),
               formula: data.formula,
@@ -201,37 +163,12 @@ export class MoleculeExtractor {
       }
     }
 
-    // Buscar padrões de fórmulas químicas
-    const formulaPatterns = [
-      /\\b[A-Z][a-z]?(\\d+[A-Z][a-z]?\\d*)*\\b/g, // Fórmulas moleculares simples
-      /\\b[A-Z]\\d+[A-Z]\\d+[A-Z]\\d+/g, // Padrões como C6H6O
-    ];
-
-    for (const pattern of formulaPatterns) {
-      const matches = text.match(pattern);
-      if (matches) {
-        for (const match of matches) {
-          if (this.isLikelyFormula(match) && !molecules.some(m => m.formula === match)) {
-            molecules.push({
-              name: `Compound ${match}`,
-              formula: match,
-              type: 'compound',
-              confidence: 0.6,
-              context: this.extractContext(text, match)
-            });
-          }
-        }
-      }
-    }
-
     // Buscar padrões de nomes de medicamentos/compostos
     const drugPatterns = [
-      /\\b\\w+vir\\b/gi, // Antivirais terminados em -vir
-      /\\b\\w+navir\\b/gi, // Inibidores de protease
-      /\\b\\w+tegravir\\b/gi, // Inibidores de integrase
-      /\\b\\w+citabine\\b/gi, // Nucleosídeos
-      /\\b\\w+mycin\\b/gi, // Antibióticos
-      /\\b\\w+cillin\\b/gi, // Penicilinas
+      /\b\w+vir\b/gi, // Antivirais terminados em -vir
+      /\b\w+navir\b/gi, // Inibidores de protease
+      /\b\w+tegravir\b/gi, // Inibidores de integrase
+      /\b\w+citabine\b/gi, // Nucleosídeos
     ];
 
     for (const pattern of drugPatterns) {
@@ -251,9 +188,52 @@ export class MoleculeExtractor {
       }
     }
 
-    // Remover duplicatas e ordenar por confiança
-    const uniqueMolecules = this.removeDuplicates(molecules);
-    return uniqueMolecules.sort((a, b) => b.confidence - a.confidence);
+    return this.removeDuplicates(molecules).sort((a, b) => b.confidence - a.confidence);
+  }
+
+  /**
+   * Gera relatório de análise de doença
+   */
+  generateDiseaseReport(disease: string, articles: any[]): DiseaseReport {
+    const allMolecules: ExtractedMolecule[] = [];
+    const allTargets: string[] = [];
+    const allMechanisms: string[] = [];
+
+    // Analisar cada artigo
+    for (const article of articles) {
+      const fullText = `${article.title} ${article.abstract || ''}`;
+      const molecules = this.extractMolecules(fullText, 'PubMed Article');
+      const targets = this.extractTargets(fullText);
+      const mechanisms = this.extractMechanisms(fullText);
+
+      allMolecules.push(...molecules);
+      allTargets.push(...targets);
+      allMechanisms.push(...mechanisms);
+    }
+
+    // Filtrar e consolidar resultados
+    const keyMolecules = this.removeDuplicates(allMolecules)
+      .filter(m => m.confidence > 0.7)
+      .slice(0, 20);
+
+    const therapeuticTargets = [...new Set(allTargets)].slice(0, 15);
+    const treatmentMechanisms = [...new Set(allMechanisms)].slice(0, 10);
+
+    // Gerar sugestões baseadas nos alvos encontrados
+    const drugSuggestions = this.suggestMolecules(therapeuticTargets, disease);
+
+    // Gerar insights moleculares
+    const molecularInsights = this.generateMolecularInsights(keyMolecules, therapeuticTargets, disease);
+
+    return {
+      disease,
+      totalArticles: articles.length,
+      keyMolecules,
+      therapeuticTargets,
+      treatmentMechanisms,
+      drugSuggestions,
+      molecularInsights
+    };
   }
 
   /**
@@ -286,72 +266,55 @@ export class MoleculeExtractor {
   }
 
   /**
-   * Analisa um artigo PubMed e extrai informações relevantes
+   * Gera estruturas moleculares básicas para visualização
    */
-  analyzeArticle(title: string, abstract: string, keywords?: string[]): {
-    molecules: ExtractedMolecule[];
-    targets: string[];
-    mechanisms: string[];
-    suggestions: ExtractedMolecule[];
-  } {
-    const fullText = `${title} ${abstract} ${keywords?.join(' ')}`;
-    
-    const molecules = this.extractMolecules(fullText, 'PubMed Article');
-    
-    // Extrair alvos mencionados
-    const targets = this.extractTargets(fullText);
-    
-    // Extrair mecanismos
-    const mechanisms = this.extractMechanisms(fullText);
-    
-    // Gerar sugestões baseadas nos alvos encontrados
-    const suggestions = this.suggestMolecules(targets, 'research context');
-
-    return {
-      molecules,
-      targets,
-      mechanisms,
-      suggestions
+  generateMoleculeStructure(moleculeName: string): BasicMoleculeStructure | undefined {
+    const basicStructures: { [key: string]: BasicMoleculeStructure } = {
+      'zidovudine': {
+        name: 'Zidovudine (AZT)',
+        atoms: [
+          { symbol: 'C', x: 0, y: 0, z: 0 },
+          { symbol: 'C', x: 1.4, y: 0, z: 0 },
+          { symbol: 'N', x: 1.4, y: 2.4, z: 0 },
+          { symbol: 'O', x: 2.1, y: -1.2, z: 0 }
+        ],
+        bonds: [
+          { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 1, to: 3 }
+        ]
+      }
     };
+
+    return basicStructures[moleculeName.toLowerCase()];
   }
 
-  private isSpecificMention(text: string, moleculeName: string, type: ExtractedMolecule['type']): boolean {
-    const lowerText = text.toLowerCase();
-    const lowerMolecule = moleculeName.toLowerCase();
-    
-    // Para enzimas como integrase, verificar se é mencionada em contexto específico
-    if (type === 'enzyme') {
-      const specificContexts = [
-        'inhibitor', 'inhibition', 'binding', 'active site', 'crystal structure',
-        'drug target', 'therapeutic target', 'compound', 'molecule', 'ligand'
-      ];
+  private generateMolecularInsights(molecules: ExtractedMolecule[], targets: string[], disease: string): string[] {
+    const insights: string[] = [];
+
+    if (molecules.length > 0) {
+      const drugCount = molecules.filter(m => m.type === 'drug').length;
+      const proteinCount = molecules.filter(m => m.type === 'protein').length;
       
-      // Verificar se há contexto específico próximo à menção
-      const moleculeIndex = lowerText.indexOf(lowerMolecule);
-      if (moleculeIndex !== -1) {
-        const contextWindow = lowerText.substring(
-          Math.max(0, moleculeIndex - 100),
-          Math.min(lowerText.length, moleculeIndex + lowerMolecule.length + 100)
-        );
-        
-        return specificContexts.some(context => contextWindow.includes(context));
-      }
-      
-      return false;
+      insights.push(`Identificados ${drugCount} medicamentos e ${proteinCount} alvos proteicos para ${disease}`);
     }
-    
-    // Para outros tipos, aceitar menções mais facilmente
-    return true;
+
+    if (targets.length > 0) {
+      insights.push(`Principais alvos terapêuticos incluem: ${targets.slice(0, 3).join(', ')}`);
+    }
+
+    const mechanisms = molecules.map(m => m.mechanism).filter(Boolean);
+    if (mechanisms.length > 0) {
+      insights.push(`Mecanismos predominantes: ${[...new Set(mechanisms)].slice(0, 2).join(', ')}`);
+    }
+
+    return insights;
   }
 
   private calculateConfidence(moleculeName: string, text: string, type: ExtractedMolecule['type']): number {
     let confidence = 0.5;
     
-    // Aumentar confiança baseada no tipo
     if (type === 'drug') confidence += 0.2;
     if (type === 'compound') confidence += 0.1;
     
-    // Aumentar confiança se aparecer em contexto médico
     const medicalTerms = ['treatment', 'therapy', 'drug', 'inhibitor', 'receptor', 'enzyme'];
     for (const term of medicalTerms) {
       if (text.toLowerCase().includes(term)) {
@@ -360,7 +323,6 @@ export class MoleculeExtractor {
       }
     }
     
-    // Aumentar confiança se aparecer múltiplas vezes
     const occurrences = (text.toLowerCase().match(new RegExp(moleculeName.toLowerCase(), 'g')) || []).length;
     confidence += Math.min(occurrences * 0.05, 0.2);
     
@@ -379,9 +341,8 @@ export class MoleculeExtractor {
 
   private extractTargets(text: string): string[] {
     const targetPatterns = [
-      /\\b(reverse transcriptase|protease|integrase|ccr5|cd4|gp120|gp41)\\b/gi,
-      /\\b\\w+\\s+(receptor|enzyme|protein|kinase|channel)\\b/gi,
-      /\\b(target|binding site|active site)\\b/gi
+      /\b(reverse transcriptase|protease|integrase|ccr5|cd4|gp120|gp41)\b/gi,
+      /\b\w+\s+(receptor|enzyme|protein|kinase|channel)\b/gi,
     ];
 
     const targets: string[] = [];
@@ -393,14 +354,13 @@ export class MoleculeExtractor {
       }
     }
 
-    return [...new Set(targets)]; // Remove duplicatas
+    return [...new Set(targets)];
   }
 
   private extractMechanisms(text: string): string[] {
     const mechanismPatterns = [
-      /\\b(inhibitor|antagonist|agonist|blocker|activator)\\b/gi,
-      /\\b(binds to|targets|inhibits|blocks|activates)\\b/gi,
-      /\\b(mechanism of action|mode of action)\\b/gi
+      /\b(inhibitor|antagonist|agonist|blocker|activator)\b/gi,
+      /\b(binds to|targets|inhibits|blocks|activates)\b/gi,
     ];
 
     const mechanisms: string[] = [];
@@ -413,15 +373,6 @@ export class MoleculeExtractor {
     }
 
     return [...new Set(mechanisms)];
-  }
-
-  private isLikelyFormula(text: string): boolean {
-    // Verificar se parece uma fórmula química válida
-    const hasElements = /[A-Z][a-z]?/.test(text);
-    const hasNumbers = /\\d/.test(text);
-    const isReasonableLength = text.length >= 3 && text.length <= 20;
-    
-    return hasElements && hasNumbers && isReasonableLength;
   }
 
   private removeDuplicates(molecules: ExtractedMolecule[]): ExtractedMolecule[] {
@@ -437,7 +388,7 @@ export class MoleculeExtractor {
   }
 
   private escapeRegex(text: string): string {
-    return text.replace(/[.*+?^${}()|[\]\\\\]/g, '\\$&');
+    return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private capitalizeFirst(text: string): string {
@@ -466,74 +417,26 @@ export class MoleculeExtractor {
   }
 
   /**
-   * Gera estruturas moleculares básicas para visualização
+   * Analisa um artigo PubMed e extrai informações relevantes
    */
-  generateMoleculeStructure(moleculeName: string): BasicMoleculeStructure | undefined {
-    const basicStructures: { [key: string]: BasicMoleculeStructure } = {
-      'zidovudine': {
-        name: 'Zidovudine (AZT)',
-        atoms: [
-          { symbol: 'C', x: 0, y: 0, z: 0 },
-          { symbol: 'C', x: 1.4, y: 0, z: 0 },
-          { symbol: 'C', x: 2.1, y: 1.2, z: 0 },
-          { symbol: 'N', x: 1.4, y: 2.4, z: 0 },
-          { symbol: 'C', x: 0, y: 2.4, z: 0 },
-          { symbol: 'N', x: -0.7, y: 1.2, z: 0 },
-          { symbol: 'O', x: 2.1, y: -1.2, z: 0 },
-          { symbol: 'N', x: -0.7, y: 3.6, z: 0 }
-        ],
-        bonds: [
-          { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
-          { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 0 },
-          { from: 1, to: 6 }, { from: 4, to: 7 }
-        ]
-      },
-      'efavirenz': {
-        name: 'Efavirenz',
-        atoms: [
-          { symbol: 'C', x: 0, y: 0, z: 0 },
-          { symbol: 'C', x: 1.4, y: 0, z: 0 },
-          { symbol: 'C', x: 2.1, y: 1.2, z: 0 },
-          { symbol: 'C', x: 1.4, y: 2.4, z: 0 },
-          { symbol: 'C', x: 0, y: 2.4, z: 0 },
-          { symbol: 'C', x: -0.7, y: 1.2, z: 0 },
-          { symbol: 'F', x: 3.5, y: 1.2, z: 0 },
-          { symbol: 'Cl', x: -2.1, y: 1.2, z: 0 },
-          { symbol: 'N', x: 0, y: 3.6, z: 0 },
-          { symbol: 'O', x: 2.1, y: 3.6, z: 0 }
-        ],
-        bonds: [
-          { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
-          { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 0 },
-          { from: 2, to: 6 }, { from: 5, to: 7 }, { from: 4, to: 8 },
-          { from: 3, to: 9 }
-        ]
-      },
-      'dolutegravir': {
-        name: 'Dolutegravir',
-        atoms: [
-          { symbol: 'C', x: 0, y: 0, z: 0 },
-          { symbol: 'C', x: 1.4, y: 0, z: 0 },
-          { symbol: 'C', x: 2.1, y: 1.2, z: 0 },
-          { symbol: 'N', x: 1.4, y: 2.4, z: 0 },
-          { symbol: 'C', x: 0, y: 2.4, z: 0 },
-          { symbol: 'N', x: -0.7, y: 1.2, z: 0 },
-          { symbol: 'F', x: 3.5, y: 1.2, z: 0 },
-          { symbol: 'F', x: 2.1, y: -1.2, z: 0 },
-          { symbol: 'O', x: -0.7, y: 3.6, z: 0 },
-          { symbol: 'O', x: 2.1, y: 3.6, z: 0 }
-        ],
-        bonds: [
-          { from: 0, to: 1 }, { from: 1, to: 2 }, { from: 2, to: 3 },
-          { from: 3, to: 4 }, { from: 4, to: 5 }, { from: 5, to: 0 },
-          { from: 2, to: 6 }, { from: 5, to: 7 }, { from: 4, to: 8 },
-          { from: 3, to: 9 }
-        ]
-      }
-    };
+  analyzeArticle(title: string, abstract: string, keywords?: string[]): {
+    molecules: ExtractedMolecule[];
+    targets: string[];
+    mechanisms: string[];
+    suggestions: ExtractedMolecule[];
+  } {
+    const fullText = `${title} ${abstract} ${keywords?.join(' ')}`;
+    
+    const molecules = this.extractMolecules(fullText, 'PubMed Article');
+    const targets = this.extractTargets(fullText);
+    const mechanisms = this.extractMechanisms(fullText);
+    const suggestions = this.suggestMolecules(targets, 'research context');
 
-    return basicStructures[moleculeName.toLowerCase()];
+    return {
+      molecules,
+      targets,
+      mechanisms,
+      suggestions
+    };
   }
 }
-
-

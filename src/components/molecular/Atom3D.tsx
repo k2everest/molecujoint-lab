@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Mesh } from 'three';
 import { Atom } from '../../types/molecular';

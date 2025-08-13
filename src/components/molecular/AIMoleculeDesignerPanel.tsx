@@ -147,10 +147,10 @@ export const AIMoleculeDesignerPanel: React.FC<AIMoleculeDesignerPanelProps> = (
         {designResult && (
           <div className="space-y-2">
             <div className="text-sm font-medium">Moléculas Projetadas:</div>
-            {designResult.designs.map((mol, idx) => (
+            {designResult.molecules.map((mol, idx) => (
               <div key={idx} className="p-2 bg-muted/50 rounded text-xs">
                 <div className="font-semibold">{mol.name}</div>
-                <div>Score: {mol.score.toFixed(2)}</div>
+                <div>Score: {mol.drugLikenessScore.toFixed(2)}</div>
               </div>
             ))}
           </div>
