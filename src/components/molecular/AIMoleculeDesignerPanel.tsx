@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -97,3 +98,64 @@ export const AIMoleculeDesignerPanel: React.FC<AIMoleculeDesignerPanelProps> = (
       const result = await aiDesigner.designMolecules(request);
       
       setDesignResult(result);
+      setDesignProgress(100);
+      setCurrentStep('Design completo!');
+      
+    } catch (error) {
+      console.error('Erro no design de moléculas:', error);
+    } finally {
+      setIsDesigning(false);
+    }
+  };
+
+  return (
+    <Card className={cn("w-96 bg-card/95 backdrop-blur-sm", className)}>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Brain className="w-5 h-5 text-primary" />
+          AI Molecule Designer
+        </CardTitle>
+      </CardHeader>
+      
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <Input
+            placeholder="Doença ou alvo terapêutico..."
+            value={targetDisease}
+            onChange={(e) => setTargetDisease(e.target.value)}
+          />
+        </div>
+
+        <Button 
+          onClick={handleDesignMolecules}
+          disabled={isDesigning || !targetDisease.trim()}
+          className="w-full"
+        >
+          {isDesigning ? (
+            <>
+              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              Designing...
+            </>
+          ) : (
+            <>
+              <Sparkles className="w-4 h-4 mr-2" />
+              Design Molecules
+            </>
+          )}
+        </Button>
+
+        {designResult && (
+          <div className="space-y-2">
+            <div className="text-sm font-medium">Moléculas Projetadas:</div>
+            {designResult.designs.map((mol, idx) => (
+              <div key={idx} className="p-2 bg-muted/50 rounded text-xs">
+                <div className="font-semibold">{mol.name}</div>
+                <div>Score: {mol.score.toFixed(2)}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
