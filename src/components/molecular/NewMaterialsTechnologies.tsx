@@ -199,9 +199,9 @@ export const NewMaterialsTechnologies: React.FC = () => {
       // Simular análise
       setTimeout(() => {
         const properties = analyzeMolecularProperties(activeMolecule);
-        const applications = generateEnergyApplications(properties);
+        const applications = generateEnergyApplications(properties as MaterialProperty[]);
         
-        setMaterialProperties(properties);
+        setMaterialProperties(properties as MaterialProperty[]);
         setEnergyApplications(applications);
         setAnalyzing(false);
       }, 1500);

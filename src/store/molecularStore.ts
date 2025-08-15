@@ -459,19 +459,19 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     loadMolecule: (moleculeData: Molecule) => {
       const moleculeId = generateId();
 
-      const atoms: Atom[] = moleculeData.atoms?.map((atom: Atom, index: number) => ({
+      const atoms: Atom[] = moleculeData.atoms?.map((atom: any, index: number) => ({
         id: `${moleculeId}-atom-${index}`,
         element: atom.symbol || atom.element || 'C',
-        position: [atom.x || 0, atom.y || 0, atom.z || 0] as [number, number, number],
+        position: [atom.x || atom.position?.[0] || 0, atom.y || atom.position?.[1] || 0, atom.z || atom.position?.[2] || 0] as [number, number, number],
         color: ELEMENT_DATA[atom.symbol || atom.element || 'C']?.color || '#CCCCCC',
         radius: ELEMENT_DATA[atom.symbol || atom.element || 'C']?.radius || 0.5,
         charge: 0
       })) || [];
 
-      const bonds: Bond[] = moleculeData.bonds?.map((bond: Bond, index: number) => ({
+      const bonds: Bond[] = moleculeData.bonds?.map((bond: any, index: number) => ({
         id: `${moleculeId}-bond-${index}`,
-        atom1Id: atoms[bond.from]?.id || '',
-        atom2Id: atoms[bond.to]?.id || '',
+        atom1Id: atoms[bond.from || bond.atom1Id || bond.atom1]?.id || '',
+        atom2Id: atoms[bond.to || bond.atom2Id || bond.atom2]?.id || '',
         bondType: 'single' as const,
         length: 1.5
       })) || [];

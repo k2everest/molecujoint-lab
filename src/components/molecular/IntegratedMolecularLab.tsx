@@ -304,7 +304,7 @@ export const IntegratedMolecularLab: React.FC<IntegratedMolecularLabProps> = ({
         if (!panel.isVisible) return null;
         
         return (
-          <Component
+          <div
             key={config.id}
             className="absolute"
             style={{ 
@@ -312,13 +312,9 @@ export const IntegratedMolecularLab: React.FC<IntegratedMolecularLabProps> = ({
               top: panel.position.y,
               zIndex: 10
             }}
-            position={panel.position}
-            onPositionChange={(position) => updatePanelState(config.id, { position })}
-            size={panel.size}
-            onSizeChange={(size) => updatePanelState(config.id, { size })}
-            isCollapsed={panel.isCollapsed}
-            onToggleCollapse={() => togglePanelCollapse(config.id)}
-          />
+          >
+            <Component />
+          </div>
         );
       })}
 

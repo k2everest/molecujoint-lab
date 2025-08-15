@@ -274,8 +274,8 @@ export const PubMedSearchPanel: React.FC<PubMedSearchPanelProps> = ({
                         ))}
                       </div>
                     )}
-                  </div>
-                </Card>
+                </div>
+              </Card>
               ))}
             </div>
           </div>

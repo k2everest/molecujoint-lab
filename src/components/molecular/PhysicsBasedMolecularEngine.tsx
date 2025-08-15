@@ -210,8 +210,8 @@ export const PhysicsBasedMolecularEngine: React.FC = () => {
     
     // Identificar anéis aromáticos (simplificado)
     const aromaticCarbons = atoms.filter(atom => 
-      atom.element === 'C' && 
-      atom.hybridization === 'sp2' // Assumindo que temos essa informação
+      atom.element === 'C'
+      // Assumindo carbono aromático baseado em conectividade
     );
     
     for (let i = 0; i < aromaticCarbons.length; i++) {
@@ -374,7 +374,7 @@ export const PhysicsBasedMolecularEngine: React.FC = () => {
       
       // Update stored values
       velocitiesRef.current.set(atom.id, newVelocity);
-      forcesRef.current.set(atom.id, newForce);
+      forcesRef.current.set(atom.id, newForce as [number, number, number]);
       
       // Update atom position in store
       updateAtomPosition(activeMolecule.id, atom.id, newPosition);

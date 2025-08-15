@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Molecule, Atom } from '../../types/molecular';
+import { Molecule, Atom as MolecularAtom } from '../../types/molecular';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -85,8 +85,8 @@ export const MaterialsPredictor: React.FC = () => {
 
   const generateMaterialPredictions = (molecule: Molecule): MaterialPrediction[] => {
     const baseName = molecule.name || 'Composto';
-    const hasAromaticRings = molecule.atoms.some((atom: Atom) => atom.element === 'C');
-    const hasHeteroatoms = molecule.atoms.some((atom: Atom) => ['N', 'O', 'S'].includes(atom.element));
+    const hasAromaticRings = molecule.atoms.some((atom: MolecularAtom) => atom.element === 'C');
+    const hasHeteroatoms = molecule.atoms.some((atom: MolecularAtom) => ['N', 'O', 'S'].includes(atom.element));
     
     const predictions: MaterialPrediction[] = [];
 

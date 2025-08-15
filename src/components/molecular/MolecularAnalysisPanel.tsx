@@ -26,9 +26,9 @@ interface Atom {
 }
 
 interface HydrogenBond {
-  donor: Atom;
-  acceptor: Atom;
-  hydrogen: Atom;
+  donor: { id: string; element: string; position: [number, number, number] };
+  acceptor: { id: string; element: string; position: [number, number, number] };
+  hydrogen: { id: string; element: string; position: [number, number, number] };
   distance: number;
   angle: number;
 }

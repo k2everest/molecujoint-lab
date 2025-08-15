@@ -110,14 +110,14 @@ export const ReactionPredictor: React.FC = () => {
           Math.pow(movement.newPosition[2] - otherAtom.position[2], 2)
         );
         
-        const idealDistance = getIdealBondLength(atom.element, otherAtom.element, bond.type);
+        const idealDistance = getIdealBondLength(atom.element, otherAtom.element, bond.type || 'single');
         const deviation = Math.abs(newDistance - idealDistance);
         strain += Math.pow(deviation * 100, 2); // Força harmônica
       }
     });
 
     return strain;
-  }, [getIdealBondLength]);
+  }, []);
 
   const analyzeBondChanges = useCallback((movement: { atomId: string; newPosition: [number, number, number] }, molecule: Molecule) => {
     const broken: string[] = [];
