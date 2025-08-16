@@ -25,6 +25,8 @@ import { NewMaterialsTechnologies } from './NewMaterialsTechnologies';
 import { ImprovedPubMedSearchPanel } from './ImprovedPubMedSearchPanel';
 import { ImprovedAIMoleculeDesigner } from './ImprovedAIMoleculeDesigner';
 import { PhysicsBasedMolecularEngine } from './PhysicsBasedMolecularEngine';
+import { DiseaseAnalysisPanel } from './DiseaseAnalysisPanel';
+import { ComparisonPanel } from './ComparisonPanel';
 import { useMolecularStore } from '../../store/molecularStore';
 
 interface PanelState {
@@ -73,6 +75,18 @@ export const IntegratedMolecularLab: React.FC<IntegratedMolecularLabProps> = ({
       isVisible: true,
       position: { x: 440, y: 400 },
       size: 'medium',
+      isCollapsed: false
+    },
+    disease: {
+      isVisible: true,
+      position: { x: 860, y: 400 },
+      size: 'medium',
+      isCollapsed: false
+    },
+    comparison: {
+      isVisible: false,
+      position: { x: 200, y: 150 },
+      size: 'large',
       isCollapsed: false
     }
   });
@@ -130,6 +144,20 @@ export const IntegratedMolecularLab: React.FC<IntegratedMolecularLabProps> = ({
       icon: <Activity className="w-4 h-4" />,
       description: 'Dinâmica molecular real',
       component: PhysicsBasedMolecularEngine
+    },
+    {
+      id: 'disease',
+      name: 'Análise de Doenças',
+      icon: <Brain className="w-4 h-4" />,
+      description: 'Análise focada em doenças e terapias',
+      component: DiseaseAnalysisPanel
+    },
+    {
+      id: 'comparison',
+      name: 'Comparação de Funcionalidades',
+      icon: <Layers className="w-4 h-4" />,
+      description: 'Explica diferenças entre funcionalidades',
+      component: ComparisonPanel
     }
   ];
 
@@ -181,7 +209,7 @@ export const IntegratedMolecularLab: React.FC<IntegratedMolecularLabProps> = ({
                     <div>
                       <span className="text-muted-foreground">Painéis Ativos:</span>
                       <div className="font-medium">
-                        {Object.values(panels).filter(p => p.isVisible).length}/5
+                        {Object.values(panels).filter(p => p.isVisible).length}/7
                       </div>
                     </div>
                     <div>
