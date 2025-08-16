@@ -36,67 +36,57 @@ export class PubMedAPI {
    */
   async searchArticles(params: PubMedSearchParams): Promise<PubMedArticle[]> {
     try {
-      // Step 1: Search for article IDs
-      const searchUrl = this.buildSearchUrl(params);
-      const searchResponse = await fetch(searchUrl);
-      const searchXml = await searchResponse.text();
-      
-      const pmids = this.extractPMIDs(searchXml);
-      
-      if (pmids.length === 0) {
-        return [];
+      const response = await fetch('/functions/v1/pubmed-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: params.query,
+          maxResults: params.maxResults || 20,
+          searchType: 'general'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      // Step 2: Fetch article details
-      const detailsUrl = this.buildDetailsUrl(pmids);
-      const detailsResponse = await fetch(detailsUrl);
-      const detailsXml = await detailsResponse.text();
-      
-      return this.parseArticleDetails(detailsXml);
+      const articles = await response.json();
+      return articles;
     } catch (error) {
       console.error('Error searching PubMed:', error);
-      // Fallback com exemplos quando a API falha (problemas de CORS)
-      return this.getExampleArticles(params.query, params.maxResults || 20);
+      throw error;
     }
   }
 
-  private getExampleArticles(query: string, maxResults: number): PubMedArticle[] {
-    const examples = [
-      {
-        pmid: '30000010',
-        title: 'Molecular dynamics simulations of protein-drug interactions',
-        authors: ['Thompson, R.', 'Martinez, L.'],
-        journal: 'Journal of Computational Chemistry',
-        year: '2023',
-        abstract: 'We performed molecular dynamics simulations to study protein-drug interactions. The study revealed key binding sites and mechanisms. Aspirin showed strong binding affinity to COX-2. Ibuprofen demonstrated selective inhibition. Novel compounds with improved selectivity were identified.',
-        doi: '10.1002/jcc.2023.10',
-        url: 'https://pubmed.ncbi.nlm.nih.gov/30000010/'
-      },
-      {
-        pmid: '30000011',
-        title: 'Structure-based drug design for cancer therapeutics',
-        authors: ['Lee, S.', 'Kim, H.'],
-        journal: 'Nature Drug Discovery',
-        year: '2023',
-        abstract: 'Structure-based approaches identified novel cancer therapeutics. Paclitaxel mechanisms of action were elucidated. Doxorubicin showed enhanced efficacy in combination therapy. Cisplatin resistance pathways were characterized.',
-        doi: '10.1038/ndd.2023.11',
-        url: 'https://pubmed.ncbi.nlm.nih.gov/30000011/'
-      }
-    ];
-
-    return examples.slice(0, maxResults);
-  }
 
   /**
    * Search for articles related to a specific molecule
    */
   async searchMolecule(moleculeName: string, maxResults = 20): Promise<PubMedArticle[]> {
-    const query = `"${moleculeName}"[Title/Abstract] OR "${moleculeName}"[MeSH Terms]`;
-    return this.searchArticles({
-      query,
-      maxResults,
-      sort: 'relevance'
-    });
+    try {
+      const response = await fetch('/functions/v1/pubmed-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: moleculeName,
+          maxResults,
+          searchType: 'molecule'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error searching molecule:', error);
+      throw error;
+    }
   }
 
   /**
@@ -104,90 +94,29 @@ export class PubMedAPI {
    */
   async searchDisease(diseaseName: string, maxResults = 20): Promise<PubMedArticle[]> {
     try {
-      const query = `"${diseaseName}"[Title/Abstract] AND ("drug therapy"[MeSH Terms] OR "molecular therapy"[Title/Abstract] OR "treatment"[Title/Abstract])`;
-      return await this.searchArticles({
-        query,
-        maxResults,
-        sort: 'relevance'
-      });
-    } catch (error) {
-      console.error('Error in searchDisease:', error);
-      // Fallback com dados de exemplo específicos para doenças
-      return this.getDiseaseExamples(diseaseName, maxResults);
-    }
-  }
-
-  private getDiseaseExamples(disease: string, maxResults: number): PubMedArticle[] {
-    const diseaseExamples: Record<string, PubMedArticle[]> = {
-      'hiv': [
-        {
-          pmid: '30000001',
-          title: 'Novel HIV-1 integrase inhibitors: synthesis and biological evaluation',
-          authors: ['Smith, J.', 'Johnson, A.', 'Williams, B.'],
-          journal: 'Journal of Medicinal Chemistry',
-          year: '2023',
-          abstract: 'We synthesized novel HIV-1 integrase inhibitors based on quinoline scaffolds. Compounds showed potent anti-HIV activity. Raltegravir demonstrated IC50 of 15 nM against HIV integrase. Dolutegravir exhibited superior resistance profile. The lead compound showed excellent pharmacokinetic properties and high barrier to resistance.',
-          doi: '10.1021/jmc.2023.00001',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/30000001/'
+      const response = await fetch('/functions/v1/pubmed-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
         },
-        {
-          pmid: '30000002',
-          title: 'Maraviroc resistance mechanisms in HIV-1 CCR5 tropism',
-          authors: ['Brown, C.', 'Davis, E.'],
-          journal: 'Nature Medicine',
-          year: '2023',
-          abstract: 'CCR5 antagonist maraviroc blocks HIV-1 entry. Resistance emerges through V3 loop mutations. Enfuvirtide provides alternative entry inhibition mechanism. Combination therapy with tenofovir and emtricitabine improves outcomes.',
-          doi: '10.1038/nm.2023.00002',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/30000002/'
-        }
-      ],
-      'alzheimer': [
-        {
-          pmid: '30000003',
-          title: 'Targeting amyloid-β plaques with novel small molecules',
-          authors: ['Wilson, M.', 'Taylor, K.'],
-          journal: 'Science',
-          year: '2023',
-          abstract: 'Aducanumab shows promise in clearing amyloid-β plaques. Donepezil enhances cholinergic transmission. Memantine modulates NMDA receptors. Novel gamma-secretase modulators reduce Aβ42 production while preserving Notch signaling.',
-          doi: '10.1126/science.2023.00003',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/30000003/'
-        }
-      ],
-      'cancer': [
-        {
-          pmid: '30000004',
-          title: 'Immunotherapy combinations in cancer treatment',
-          authors: ['Anderson, R.', 'Thompson, S.'],
-          journal: 'Cell',
-          year: '2023',
-          abstract: 'Pembrolizumab checkpoint inhibitor shows efficacy in multiple cancers. Bevacizumab targets VEGF angiogenesis pathway. Imatinib specifically inhibits BCR-ABL kinase. CAR-T therapies demonstrate remarkable responses in hematologic malignancies.',
-          doi: '10.1016/j.cell.2023.00004',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/30000004/'
-        }
-      ]
-    };
+        body: JSON.stringify({
+          query: diseaseName,
+          maxResults,
+          searchType: 'disease'
+        })
+      });
 
-    const normalizedDisease = disease.toLowerCase();
-    let examples = diseaseExamples[normalizedDisease] || [];
-    
-    // Se não encontrar exemplos específicos, criar exemplos genéricos
-    if (examples.length === 0) {
-      examples = [
-        {
-          pmid: '30000000',
-          title: `Molecular mechanisms and therapeutic approaches in ${disease}`,
-          authors: ['Research Team'],
-          journal: 'Current Medical Research',
-          year: '2023',
-          abstract: `Comprehensive study of ${disease} reveals key molecular pathways. Multiple therapeutic targets identified including protein kinases and receptors. Novel drug candidates show promising preclinical results. Aspirin and ibuprofen provide anti-inflammatory effects.`,
-          doi: '10.1000/example.2023.00000',
-          url: 'https://pubmed.ncbi.nlm.nih.gov/30000000/'
-        }
-      ];
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error searching disease:', error);
+      throw error;
     }
-
-    return examples.slice(0, maxResults);
   }
+
 
   /**
    * Search for articles about molecular interactions
@@ -205,12 +134,28 @@ export class PubMedAPI {
    * Search for drug discovery articles
    */
   async searchDrugDiscovery(targetName: string, maxResults = 25): Promise<PubMedArticle[]> {
-    const query = `"${targetName}"[Title/Abstract] AND ("drug discovery"[Title/Abstract] OR "drug design"[Title/Abstract] OR "molecular docking"[Title/Abstract] OR "structure-based drug design"[MeSH Terms])`;
-    return this.searchArticles({
-      query,
-      maxResults,
-      sort: 'date'
-    });
+    try {
+      const response = await fetch('/functions/v1/pubmed-search', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          query: targetName,
+          maxResults,
+          searchType: 'drug_discovery'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error searching drug discovery:', error);
+      throw error;
+    }
   }
 
   private buildSearchUrl(params: PubMedSearchParams): string {
