@@ -349,12 +349,16 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
 
       const stepSize = 0.001; // Small step for stability
       const iterations = 100; // Number of optimization steps
+      
+      console.log('Starting geometry optimization for:', currentMolecule.name);
 
       for (let i = 0; i < iterations; i++) {
         const forceResult = physics.calculateForces(currentMolecule);
         const forces = forceResult.atomForces;
+        
+        // Update atom positions based on forces
         const optimizedAtoms = currentMolecule.atoms.map((atom, idx) => {
-          const force = forces[idx];
+          const force = forces[idx] || [0, 0, 0];
           return {
             ...atom,
             position: [
@@ -364,12 +368,25 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
             ] as [number, number, number],
           };
         });
+        
         currentMolecule = { ...currentMolecule, atoms: optimizedAtoms };
       }
 
+      // Calculate final properties after optimization
+      const finalResults = physics.calculatePhysics(currentMolecule);
+      
+      // Update the molecule with optimized geometry and new properties
+      const optimizedMolecule = {
+        ...currentMolecule,
+        energy: finalResults.totalEnergy,
+        dipoleMoment: physics.calculateDipoleMoment(currentMolecule),
+      };
+      
+      console.log('Optimization complete. Final energy:', finalResults.totalEnergy);
+
       set((state) => ({
         molecules: state.molecules.map(m => 
-          m.id === moleculeId ? currentMolecule : m
+          m.id === moleculeId ? optimizedMolecule : m
         ),
       }));
     },
