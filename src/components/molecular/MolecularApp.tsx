@@ -6,6 +6,8 @@ import { MolecularAnalysisPanel } from './MolecularAnalysisPanel';
 import { MolecularNotifications } from './MolecularNotifications';
 import { MolecularProgressBar } from './MolecularProgressBar';
 import { MolecularKeyboardShortcuts } from './MolecularKeyboardShortcuts';
+import { MolecularOptimizer } from './MolecularOptimizer';
+import { PerformanceMonitor } from './PerformanceMonitor';
 import { PubMedSearchPanel } from './PubMedSearchPanel';
 import { DiseaseAnalysisPanel } from './DiseaseAnalysisPanel';
 import { AIMoleculeDesignerPanel } from './AIMoleculeDesignerPanel';
@@ -19,6 +21,7 @@ import { DesignedMolecule } from '../../utils/aiMoleculeDesigner';
 import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { X, FlaskConical, BookOpen, Microscope, Sparkles, BarChart3, GraduationCap } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export const MolecularApp: React.FC = () => {
   const [showPhysicsEditor, setShowPhysicsEditor] = useState(false);
@@ -117,6 +120,21 @@ export const MolecularApp: React.FC = () => {
     ));
   };
 
+  const openOptimizerPanel = () => {
+    addPanel('optimizer', (
+      <DraggablePanel
+        title="Otimizador Molecular"
+        icon={<X className="w-4 h-4 text-cyan-500" />}
+        defaultPosition={{ x: 300, y: 200 }}
+        defaultSize={{ width: 320, height: 500 }}
+        onClose={() => removePanel('optimizer')}
+        zIndex={panels.find(p => p.id === 'optimizer')?.zIndex || 10}
+      >
+        <MolecularOptimizer />
+      </DraggablePanel>
+    ));
+  };
+
   useEffect(() => {
     // Keyboard shortcuts listener
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -179,14 +197,15 @@ export const MolecularApp: React.FC = () => {
             </p>
           </div>
           <div className="flex items-center gap-4">
-            <Button 
-              variant="outline" 
-              onClick={() => window.location.href = '/maestro'}
-              className="gap-2"
-            >
-              <FlaskConical className="w-4 h-4" />
-              MS Maestro
-            </Button>
+            <Link to="/maestro">
+              <Button 
+                variant="outline" 
+                className="gap-2"
+              >
+                <FlaskConical className="w-4 h-4" />
+                MS Maestro
+              </Button>
+            </Link>
             <div className="flex items-center gap-2">
               <div className="w-3 h-3 rounded-full bg-accent animate-orbital-pulse"></div>
               <div className="text-sm text-muted-foreground">Sistema Ativo</div>
@@ -244,6 +263,15 @@ export const MolecularApp: React.FC = () => {
               <GraduationCap className="w-4 h-4" />
               Aprendizado
             </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openOptimizerPanel}
+              className="gap-2"
+            >
+              <X className="w-4 h-4" />
+              Otimizador
+            </Button>
           </div>
           
           <MolecularToolbar onShowPhysicsEditor={() => setShowPhysicsEditor(true)} />
@@ -273,6 +301,7 @@ export const MolecularApp: React.FC = () => {
       {/* Floating UI Components */}
       <MolecularNotifications />
       <MolecularProgressBar />
+      <PerformanceMonitor />
 
       {/* Keyboard Shortcuts Modal */}
       <MolecularKeyboardShortcuts 
