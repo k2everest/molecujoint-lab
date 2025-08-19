@@ -11,6 +11,7 @@ import { DiseaseAnalysisPanel } from './DiseaseAnalysisPanel';
 import { AIMoleculeDesignerPanel } from './AIMoleculeDesignerPanel';
 import { MoleculeSelector } from './MoleculeSelector';
 import { AIPhysicsEditor } from './AIPhysicsEditor';
+import { ConfigurationPanel } from './ConfigurationPanel';
 import { ActiveLearningPanel } from './ActiveLearningPanel';
 import { DraggablePanel, useDraggablePanels } from '../ui/draggable-panel';
 import { useMolecularStore } from '../../store/molecularStore';
@@ -113,6 +114,21 @@ export const MolecularApp: React.FC = () => {
         zIndex={panels.find(p => p.id === 'active-learning')?.zIndex || 10}
       >
         <ActiveLearningPanel />
+      </DraggablePanel>
+    ));
+  };
+
+  const openConfigurationPanel = () => {
+    addPanel('configuration', (
+      <DraggablePanel
+        title="Configuração de Otimização"
+        icon={<Settings className="w-4 h-4 text-purple-500" />}
+        defaultPosition={{ x: 300, y: 200 }}
+        defaultSize={{ width: 400, height: 500 }}
+        onClose={() => removePanel('configuration')}
+        zIndex={panels.find(p => p.id === 'configuration')?.zIndex || 10}
+      >
+        <ConfigurationPanel />
       </DraggablePanel>
     ));
   };
@@ -243,6 +259,15 @@ export const MolecularApp: React.FC = () => {
             >
               <GraduationCap className="w-4 h-4" />
               Aprendizado
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openConfigurationPanel}
+              className="gap-2"
+            >
+              <Settings className="w-4 h-4" />
+              Configure
             </Button>
           </div>
           

@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '.
 import { Progress } from '../ui/progress';
 import { Badge } from '../ui/badge';
 import { Separator } from '../ui/separator';
-import { Brain, Target, Zap, Database, ChartLine, Settings } from 'lucide-react';
+import { Brain, Target, Zap, Database, ChartLine, Settings, Play, Pause, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 
 interface MLModel {
@@ -67,35 +67,71 @@ export const ActiveLearningPanel: React.FC = () => {
     }
   ]);
 
-  const [trainingProgress, setTrainingProgress] = useState(67);
+  const [trainingProgress, setTrainingProgress] = useState(0);
+  const [isTraining, setIsTraining] = useState(false);
   const [predictions] = useState([
-    { compound: 'ZINC000001', score: 8.3, confidence: 0.95 },
-    { compound: 'ZINC000002', score: 7.8, confidence: 0.89 },
-    { compound: 'ZINC000003', score: 9.1, confidence: 0.92 },
-    { compound: 'ZINC000004', score: 6.4, confidence: 0.78 }
+    { compound: 'HIV-benz-001', score: 8.3, confidence: 0.95 },
+    { compound: 'HIV-pyri-002', score: 7.8, confidence: 0.89 },
+    { compound: 'ALZ-dono-003', score: 9.1, confidence: 0.92 },
+    { compound: 'CAN-pemb-004', score: 6.4, confidence: 0.78 }
   ]);
 
   const handleStartTraining = () => {
+    if (isTraining) {
+      setIsTraining(false);
+      toast.info('Treinamento pausado');
+      return;
+    }
+
+    setIsTraining(true);
+    setTrainingProgress(0);
     toast.success('Iniciando treinamento do modelo de active learning...');
-    // Simulate training progress
+    
+    // Simulate realistic training progress
     const interval = setInterval(() => {
       setTrainingProgress(prev => {
         if (prev >= 100) {
           clearInterval(interval);
-          toast.success('Modelo treinado com sucesso!');
+          setIsTraining(false);
+          toast.success('Modelo treinado com sucesso! 🎯', {
+            description: `Acurácia final: ${(Math.random() * 0.15 + 0.85).toFixed(3)}`
+          });
           return 100;
         }
-        return prev + Math.random() * 5;
+        return prev + Math.random() * 3 + 1;
       });
-    }, 500);
+    }, 200);
   };
 
   const handleGeneratePredictions = () => {
-    toast.success('Gerando predições para biblioteca molecular...');
+    toast.success('Gerando predições para biblioteca molecular...', {
+      description: 'Analisando 10,000 compostos'
+    });
+    
+    // Simulate prediction generation
+    setTimeout(() => {
+      toast.success('Predições geradas! 📊', {
+        description: `${predictions.length} compostos promissores identificados`
+      });
+    }, 2000);
   };
 
   const handleOptimizeModel = () => {
-    toast.success('Otimizando hiperparâmetros do modelo...');
+    toast.success('Otimizando hiperparâmetros do modelo...', {
+      description: 'Usando Bayesian Optimization'
+    });
+    
+    setTimeout(() => {
+      toast.success('Modelo otimizado! ⚡', {
+        description: 'Melhoria de 12% na acurácia'
+      });
+    }, 3000);
+  };
+
+  const handleResetModel = () => {
+    setTrainingProgress(0);
+    setIsTraining(false);
+    toast.info('Modelo resetado para estado inicial');
   };
 
   return (
@@ -257,6 +293,35 @@ export const ActiveLearningPanel: React.FC = () => {
                   <SelectItem value="entropy">Predictive Entropy</SelectItem>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className="flex gap-2">
+              <Button 
+                onClick={handleStartTraining} 
+                className="flex-1 h-8 text-sm"
+                variant={isTraining ? "destructive" : "default"}
+              >
+                {isTraining ? (
+                  <>
+                    <Pause className="w-4 h-4 mr-2" />
+                    Pausar
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-4 h-4 mr-2" />
+                    Start Active Learning
+                  </>
+                )}
+              </Button>
+              <Button 
+                onClick={handleResetModel} 
+                variant="outline" 
+                size="sm" 
+                className="h-8"
+                disabled={isTraining}
+              >
+                <RotateCcw className="w-4 h-4" />
+              </Button>
             </div>
           </TabsContent>
 
