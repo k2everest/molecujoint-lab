@@ -109,29 +109,79 @@ export const DiseaseAnalysisPanel: React.FC<DiseaseAnalysisPanelProps> = ({
       
       if (structure) {
         // Carregar molécula no visualizador
+        const atoms = structure.atoms.map((atom, index) => ({
+          id: `atom_${index}`,
+          element: atom.symbol,
+          position: [atom.x, atom.y, atom.z] as [number, number, number],
+          color: '#FF0000',
+          radius: 1.0
+        }));
+
+        const bonds = structure.bonds.map((bond, index) => ({
+          id: `bond_${index}`,
+          atom1Id: `atom_${bond.from}`,
+          atom2Id: `atom_${bond.to}`,
+          bondType: 'single' as const,
+          length: 1.5
+        }));
+
         loadMolecule({
+          id: `mol_${Date.now()}`,
           name: structure.name,
-          atoms: structure.atoms,
-          bonds: structure.bonds
+          atoms,
+          bonds
         });
         
         onMoleculeLoad?.(molecule);
       } else {
         // Se não tiver estrutura, criar uma estrutura básica
-        const basicStructure = {
-          name: molecule.name,
-          atoms: [
-            { symbol: 'C', x: 0, y: 0, z: 0 },
-            { symbol: 'N', x: 1.5, y: 0, z: 0 },
-            { symbol: 'O', x: 0, y: 1.5, z: 0 }
-          ],
-          bonds: [
-            { from: 0, to: 1 },
-            { from: 0, to: 2 }
-          ]
-        };
+        const atoms = [
+          {
+            id: 'atom_0',
+            element: 'C',
+            position: [0, 0, 0] as [number, number, number],
+            color: '#909090',
+            radius: 0.7
+          },
+          {
+            id: 'atom_1',
+            element: 'N',
+            position: [1.5, 0, 0] as [number, number, number],
+            color: '#3050F8',
+            radius: 0.65
+          },
+          {
+            id: 'atom_2',
+            element: 'O',
+            position: [0, 1.5, 0] as [number, number, number],
+            color: '#FF0D0D',
+            radius: 0.6
+          }
+        ];
+
+        const bonds = [
+          {
+            id: 'bond_0',
+            atom1Id: 'atom_0',
+            atom2Id: 'atom_1',
+            bondType: 'single' as const,
+            length: 1.5
+          },
+          {
+            id: 'bond_1',
+            atom1Id: 'atom_0',
+            atom2Id: 'atom_2',
+            bondType: 'single' as const,
+            length: 1.5
+          }
+        ];
         
-        loadMolecule(basicStructure);
+        loadMolecule({
+          id: `mol_${Date.now()}`,
+          name: molecule.name,
+          atoms,
+          bonds
+        });
         onMoleculeLoad?.(molecule);
       }
     } catch (error) {

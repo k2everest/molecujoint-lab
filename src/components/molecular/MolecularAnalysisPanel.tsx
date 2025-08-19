@@ -17,10 +17,18 @@ import {
   Microscope
 } from 'lucide-react';
 
+interface Atom {
+  id: string;
+  element: string;
+  x: number;
+  y: number;
+  z: number;
+}
+
 interface HydrogenBond {
-  donor: any;
-  acceptor: any;
-  hydrogen: any;
+  donor: { id: string; element: string; position: [number, number, number] };
+  acceptor: { id: string; element: string; position: [number, number, number] };
+  hydrogen: { id: string; element: string; position: [number, number, number] };
   distance: number;
   angle: number;
 }

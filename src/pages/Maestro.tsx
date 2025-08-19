@@ -4,6 +4,8 @@ import { MolecularToolbar } from '../components/molecular/MolecularToolbar';
 import { MolecularStatus } from '../components/molecular/MolecularStatus';
 import { MaestroInterface } from '../components/molecular/MaestroInterface';
 import { ActiveLearningPanel } from '../components/molecular/ActiveLearningPanel';
+import { ReactionPredictor } from '../components/molecular/ReactionPredictor';
+import { MaterialsPredictor } from '../components/molecular/MaterialsPredictor';
 import { MolecularNotifications } from '../components/molecular/MolecularNotifications';
 import { Button } from '../components/ui/button';
 import { ArrowLeft, Home } from 'lucide-react';
@@ -66,6 +68,16 @@ export const Maestro: React.FC = () => {
         {/* Active Learning Panel - Bottom right */}
         <div className="absolute bottom-20 right-4 z-10">
           <ActiveLearningPanel />
+        </div>
+
+        {/* Reaction Predictor - Top center */}
+        <div className="absolute top-4 left-1/2 transform -translate-x-1/2 z-10">
+          <ReactionPredictor />
+        </div>
+
+        {/* Materials Predictor - Bottom left */}
+        <div className="absolute bottom-20 left-4 z-10">
+          <MaterialsPredictor />
         </div>
       </div>
 

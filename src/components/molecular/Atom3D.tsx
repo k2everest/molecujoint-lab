@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { useFrame, useThree } from '@react-three/fiber';
+import { useFrame, useThree, ThreeEvent } from '@react-three/fiber';
 import { Html } from '@react-three/drei';
 import { Mesh } from 'three';
 import { Atom } from '../../types/molecular';
@@ -11,6 +11,8 @@ interface Atom3DProps {
   isSelected?: boolean;
   onSelect?: () => void;
   onDrag?: (position: [number, number, number]) => void;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
 export const Atom3D: React.FC<Atom3DProps> = ({
@@ -49,7 +51,7 @@ export const Atom3D: React.FC<Atom3DProps> = ({
     }
   };
 
-  const handlePointerDown = (event: any) => {
+  const handlePointerDown = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     setIsDragging(true);
     onSelect?.();
@@ -61,7 +63,7 @@ export const Atom3D: React.FC<Atom3DProps> = ({
     gl.domElement.style.cursor = hovered ? 'pointer' : 'auto';
   };
 
-  const handlePointerMove = (event: any) => {
+  const handlePointerMove = (event: ThreeEvent<PointerEvent>) => {
     if (isDragging && onDrag) {
       const newPosition: [number, number, number] = [
         event.point.x,

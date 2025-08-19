@@ -101,6 +101,8 @@ export const MoleculeViewer3D: React.FC = () => {
               isSelected={selectedAtomId === atom.id}
               onSelect={() => setSelectedAtomId(atom.id)}
               onDrag={(position) => handleAtomDrag(atom.id, position)}
+              onDragStart={() => setDraggedAtomId(atom.id)}
+              onDragEnd={() => setDraggedAtomId(null)}
             />
           ))}
 
@@ -115,9 +117,10 @@ export const MoleculeViewer3D: React.FC = () => {
 
           {/* Controls */}
           <OrbitControls
-            enablePan={true}
-            enableZoom={true}
-            enableRotate={true}
+            enabled={!draggedAtomId}
+            enablePan={!draggedAtomId}
+            enableZoom={!draggedAtomId}
+            enableRotate={!draggedAtomId}
             dampingFactor={0.05}
             minDistance={5}
             maxDistance={100}

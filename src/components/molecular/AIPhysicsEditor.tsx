@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
@@ -37,7 +37,7 @@ export const AIPhysicsEditor: React.FC = () => {
   const activeMolecule = molecules.find(m => m.id === activeMoleculeId);
 
   // Simulação de IA para sugestões de parâmetros
-  const generateAISuggestions = () => {
+  const generateAISuggestions = useCallback(() => {
     const [elem1, elem2] = selectedElements;
     const suggestions = [
       `Para ligação ${elem1}-${elem2}: ε optimal = ${(Math.random() * 0.2 + 0.05).toFixed(3)} kcal/mol`,
@@ -47,7 +47,7 @@ export const AIPhysicsEditor: React.FC = () => {
       `Barreira torsional estimada: ${(Math.random() * 3 + 0.5).toFixed(2)} kcal/mol`
     ];
     setAiSuggestions(suggestions);
-  };
+  }, [selectedElements]);
 
   const optimizeParameters = async () => {
     if (!activeMolecule) return;

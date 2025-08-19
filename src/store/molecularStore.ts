@@ -6,6 +6,7 @@ import { SimulationSettings } from '../types/physics';
 import { ExtractedMolecule } from '../utils/moleculeExtractor';
 
 interface MolecularStore extends MolecularSystem {
+  lastAtomMovement: { atomId: string; oldPosition: [number, number, number]; newPosition: [number, number, number] } | null;
   // Actions
   addMolecule: (molecule: Molecule) => void;
   addMoleculeToCollection: (molecule: Molecule) => void;
@@ -30,6 +31,7 @@ interface MolecularStore extends MolecularSystem {
   calculateTorsion: (moleculeId: string, atom1Id: string, atom2Id: string, atom3Id: string, atom4Id: string) => number | null;
   detectHydrogenBonds: (moleculeId: string) => { donor: Atom; acceptor: Atom; hydrogen: Atom; distance: number; angle: number }[];
   loadExtractedMolecules: (extractedMolecules: ExtractedMolecule[]) => void;
+  loadMolecule: (molecule: Molecule) => void;
   createMoleculeFromFormula: (formula: string, name: string) => Molecule | null;
   clear: () => void;
 }
@@ -44,498 +46,533 @@ export const useMolecularStore = create<MolecularStore>((set, get) => {
     showLabels: true,
     showBonds: true,
     showHydrogens: true,
+    lastAtomMovement: null,
 
-  addMolecule: (molecule) => set((state) => ({
-    molecules: [molecule], // Substituir todas as moléculas pela nova
-    activeMoleculeId: molecule.id,
-  })),
+    addMolecule: (molecule) => set((state) => ({
+      molecules: [molecule], // Substituir todas as moléculas pela nova
+      activeMoleculeId: molecule.id,
+    })),
 
-  addMoleculeToCollection: (molecule) => set((state) => ({
-    molecules: [...state.molecules, molecule], // Adicionar à coleção existente
-    activeMoleculeId: molecule.id,
-  })),
+    addMoleculeToCollection: (molecule) => set((state) => ({
+      molecules: [...state.molecules, molecule], // Adicionar à coleção existente
+      activeMoleculeId: molecule.id,
+    })),
 
-  removeMolecule: (id) => set((state) => ({
-    molecules: state.molecules.filter(m => m.id !== id),
-    activeMoleculeId: state.activeMoleculeId === id ? null : state.activeMoleculeId,
-  })),
+    removeMolecule: (id) => set((state) => ({
+      molecules: state.molecules.filter(m => m.id !== id),
+      activeMoleculeId: state.activeMoleculeId === id ? null : state.activeMoleculeId,
+    })),
 
-  setActiveMolecule: (id) => set({ activeMoleculeId: id }),
+    setActiveMolecule: (id) => set({ activeMoleculeId: id }),
 
-  addAtom: (moleculeId, element, position) => set((state) => ({
-    molecules: state.molecules.map(molecule => 
-      molecule.id === moleculeId 
-        ? {
-            ...molecule,
-            atoms: [...molecule.atoms, {
-              id: generateId(),
-              element,
-              position,
-              color: ELEMENT_DATA[element]?.color || '#CCCCCC',
-              radius: ELEMENT_DATA[element]?.radius || 0.5,
-            }]
-          }
-        : molecule
-    ),
-  })),
-
-  removeAtom: (moleculeId, atomId) => set((state) => ({
-    molecules: state.molecules.map(molecule =>
-      molecule.id === moleculeId
-        ? {
-            ...molecule,
-            atoms: molecule.atoms.filter(atom => atom.id !== atomId),
-            bonds: molecule.bonds.filter(bond => 
-              bond.atom1Id !== atomId && bond.atom2Id !== atomId
-            ),
-          }
-        : molecule
-    ),
-  })),
-
-  updateAtomPosition: (moleculeId, atomId, position) => set((state) => ({
-    molecules: state.molecules.map(molecule =>
-      molecule.id === moleculeId
-        ? {
-            ...molecule,
-            atoms: molecule.atoms.map(atom =>
-              atom.id === atomId ? { ...atom, position } : atom
-            ),
-          }
-        : molecule
-    ),
-  })),
-
-  addBond: (moleculeId, atom1Id, atom2Id, bondType = 'single') => set((state) => {
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return state;
-
-    const atom1 = molecule.atoms.find(a => a.id === atom1Id);
-    const atom2 = molecule.atoms.find(a => a.id === atom2Id);
-    if (!atom1 || !atom2) return state;
-
-    const distance = Math.sqrt(
-      Math.pow(atom1.position[0] - atom2.position[0], 2) +
-      Math.pow(atom1.position[1] - atom2.position[1], 2) +
-      Math.pow(atom1.position[2] - atom2.position[2], 2)
-    );
-
-    const newBond: Bond = {
-      id: generateId(),
-      atom1Id,
-      atom2Id,
-      bondType,
-      length: distance,
-    };
-
-    return {
-      molecules: state.molecules.map(m =>
-        m.id === moleculeId
-          ? { ...m, bonds: [...m.bonds, newBond] }
-          : m
+    addAtom: (moleculeId, element, position) => set((state) => ({
+      molecules: state.molecules.map(molecule => 
+        molecule.id === moleculeId 
+          ? {
+              ...molecule,
+              atoms: [...molecule.atoms, {
+                id: generateId(),
+                element,
+                position,
+                color: ELEMENT_DATA[element]?.color || '#CCCCCC',
+                radius: ELEMENT_DATA[element]?.radius || 0.5,
+              }]
+            }
+          : molecule
       ),
-    };
-  }),
+    })),
 
-  removeBond: (moleculeId, bondId) => set((state) => ({
-    molecules: state.molecules.map(molecule =>
-      molecule.id === moleculeId
-        ? {
-            ...molecule,
-            bonds: molecule.bonds.filter(bond => bond.id !== bondId),
-          }
-        : molecule
-    ),
-  })),
+    removeAtom: (moleculeId, atomId) => set((state) => ({
+      molecules: state.molecules.map(molecule =>
+        molecule.id === moleculeId
+          ? {
+              ...molecule,
+              atoms: molecule.atoms.filter(atom => atom.id !== atomId),
+              bonds: molecule.bonds.filter(bond => 
+                bond.atom1Id !== atomId && bond.atom2Id !== atomId
+              ),
+            }
+          : molecule
+      ),
+    })),
 
-  setViewMode: (mode) => set({ viewMode: mode }),
-  
-  toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
-  
-  toggleBonds: () => set((state) => ({ showBonds: !state.showBonds })),
-  
-  toggleHydrogens: () => set((state) => ({ showHydrogens: !state.showHydrogens })),
+    updateAtomPosition: (moleculeId, atomId, position) => set((state) => {
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      const atom = molecule?.atoms.find(a => a.id === atomId);
+      
+      return {
+        molecules: state.molecules.map(molecule =>
+          molecule.id === moleculeId
+            ? {
+                ...molecule,
+                atoms: molecule.atoms.map(atom =>
+                  atom.id === atomId ? { ...atom, position } : atom
+                ),
+              }
+            : molecule
+        ),
+        lastAtomMovement: atom ? {
+          atomId,
+          oldPosition: atom.position,
+          newPosition: position
+        } : null
+      };
+    }),
 
-  loadMoleculeTemplate: (templateName) => {
-    const template = MOLECULE_TEMPLATES[templateName];
-    const moleculeId = generateId();
-    
-    const atoms: Atom[] = template.atoms.map((atomTemplate, index) => ({
-      id: `${moleculeId}-atom-${index}`,
-      element: atomTemplate.element,
-      position: atomTemplate.position,
-      color: ELEMENT_DATA[atomTemplate.element]?.color || '#CCCCCC',
-      radius: ELEMENT_DATA[atomTemplate.element]?.radius || 0.5,
-    }));
+    addBond: (moleculeId, atom1Id, atom2Id, bondType = 'single') => set((state) => {
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      if (!molecule) return state;
 
-    const bonds: Bond[] = template.bonds.map((bondTemplate, index) => {
-      const atom1 = atoms[bondTemplate.atom1];
-      const atom2 = atoms[bondTemplate.atom2];
+      const atom1 = molecule.atoms.find(a => a.id === atom1Id);
+      const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+      if (!atom1 || !atom2) return state;
+
       const distance = Math.sqrt(
         Math.pow(atom1.position[0] - atom2.position[0], 2) +
         Math.pow(atom1.position[1] - atom2.position[1], 2) +
         Math.pow(atom1.position[2] - atom2.position[2], 2)
       );
 
-      return {
-        id: `${moleculeId}-bond-${index}`,
-        atom1Id: atom1.id,
-        atom2Id: atom2.id,
-        bondType: bondTemplate.type,
+      const newBond: Bond = {
+        id: generateId(),
+        atom1Id,
+        atom2Id,
+        bondType,
         length: distance,
       };
-    });
 
-    const molecule: Molecule = {
-      id: moleculeId,
-      name: template.name,
-      atoms,
-      bonds,
-    };
+      return {
+        molecules: state.molecules.map(m =>
+          m.id === moleculeId
+            ? { ...m, bonds: [...m.bonds, newBond] }
+            : m
+        ),
+      };
+    }),
 
-    set({
-      molecules: [molecule], // Substituir todas as moléculas pela nova
-      activeMoleculeId: moleculeId,
-    });
-  },
-
-  calculateMoleculeProperties: (moleculeId) => {
-    set((state) => ({
-      molecules: state.molecules.map(molecule => {
-        if (molecule.id !== moleculeId) return molecule;
-        
-        const results = physics.calculatePhysics(molecule);
-        
-        return {
-          ...molecule,
-          energy: results.totalEnergy,
-          dipoleMoment: physics.calculateDipoleMoment(molecule),
-        };
-      }),
-    }));
-  },
-
-  calculateAdvancedPhysics: (moleculeId) => {
-    const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return;
-
-    const results = physics.calculatePhysics(molecule);
-    console.log('Advanced Physics Results:', results);
-    
-    set((state) => ({
-      molecules: state.molecules.map(m => 
-        m.id === moleculeId 
-          ? { 
-              ...m, 
-              energy: results.totalEnergy,
-              dipoleMoment: results.potentialEnergy * 0.1 // Simplified calculation
+    removeBond: (moleculeId, bondId) => set((state) => ({
+      molecules: state.molecules.map(molecule =>
+        molecule.id === moleculeId
+          ? {
+              ...molecule,
+              bonds: molecule.bonds.filter(bond => bond.id !== bondId),
             }
-          : m
+          : molecule
       ),
-    }));
-  },
+    })),
 
-  runMolecularDynamics: (moleculeId, settings) => {
-    const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return;
+    setViewMode: (mode) => set({ viewMode: mode }),
+    
+    toggleLabels: () => set((state) => ({ showLabels: !state.showLabels })),
+    
+    toggleBonds: () => set((state) => ({ showBonds: !state.showBonds })),
+    
+    toggleHydrogens: () => set((state) => ({ showHydrogens: !state.showHydrogens })),
 
-    // Import the MD simulator dynamically
-    import('../utils/molecularDynamics').then(({ MolecularDynamicsSimulator }) => {
-      const simulator = new MolecularDynamicsSimulator(settings);
-      let mdState = simulator.createInitialState(molecule);
+    loadMoleculeTemplate: (templateName) => {
+      const template = MOLECULE_TEMPLATES[templateName];
+      const moleculeId = generateId();
       
-      // Run simulation for specified number of steps
-      const numSteps = settings.steps || 1000;
-      const updateInterval = Math.max(1, Math.floor(numSteps / 100)); // Update 100 times
+      const atoms: Atom[] = template.atoms.map((atomTemplate, index) => ({
+        id: `${moleculeId}-atom-${index}`,
+        element: atomTemplate.element,
+        position: atomTemplate.position,
+        color: ELEMENT_DATA[atomTemplate.element]?.color || '#CCCCCC',
+        radius: ELEMENT_DATA[atomTemplate.element]?.radius || 0.5,
+      }));
+
+      const bonds: Bond[] = template.bonds.map((bondTemplate, index) => {
+        const atom1 = atoms[bondTemplate.atom1];
+        const atom2 = atoms[bondTemplate.atom2];
+        const distance = Math.sqrt(
+          Math.pow(atom1.position[0] - atom2.position[0], 2) +
+          Math.pow(atom1.position[1] - atom2.position[1], 2) +
+          Math.pow(atom1.position[2] - atom2.position[2], 2)
+        );
+
+        return {
+          id: `${moleculeId}-bond-${index}`,
+          atom1Id: atom1.id,
+          atom2Id: atom2.id,
+          bondType: bondTemplate.type,
+          length: distance,
+        };
+      });
+
+      const molecule: Molecule = {
+        id: moleculeId,
+        name: template.name,
+        atoms,
+        bonds,
+      };
+
+      set({
+        molecules: [molecule], // Substituir todas as moléculas pela nova
+        activeMoleculeId: moleculeId,
+      });
+    },
+
+    calculateMoleculeProperties: (moleculeId) => {
+      set((state) => ({
+        molecules: state.molecules.map(molecule => {
+          if (molecule.id !== moleculeId) return molecule;
+          
+          const results = physics.calculatePhysics(molecule);
+          
+          return {
+            ...molecule,
+            energy: results.totalEnergy,
+            dipoleMoment: physics.calculateDipoleMoment(molecule),
+          };
+        }),
+      }));
+    },
+
+    calculateAdvancedPhysics: (moleculeId) => {
+      const state = get();
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      if (!molecule) return;
+
+      const results = physics.calculatePhysics(molecule);
+      console.log('Advanced Physics Results:', results);
       
-      let stepCount = 0;
-      const runStep = () => {
-        if (stepCount >= numSteps) return;
+      set((state) => ({
+        molecules: state.molecules.map(m => 
+          m.id === moleculeId 
+            ? { 
+                ...m, 
+                energy: results.totalEnergy,
+                dipoleMoment: results.potentialEnergy * 0.1 // Simplified calculation
+              }
+            : m
+        ),
+      }));
+    },
+
+    runMolecularDynamics: (moleculeId, settings) => {
+      const state = get();
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      if (!molecule) return;
+
+      // Import the MD simulator dynamically
+      import('../utils/molecularDynamics').then(({ MolecularDynamicsSimulator }) => {
+        const simulator = new MolecularDynamicsSimulator(settings);
+        let mdState = simulator.createInitialState(molecule);
         
-        // Calculate forces using the physics engine
-        const calculateForces = (positions: number[][]) => {
-          return positions.map((pos, i) => {
-            const atom = { ...molecule.atoms[i], position: pos as [number, number, number] };
-            const forces = physics.calculateForces({ ...molecule, atoms: [atom] });
-            return forces.atomForces[0] || [0, 0, 0];
-          });
+        // Run simulation for specified number of steps
+        const numSteps = settings.steps || 1000;
+        const updateInterval = Math.max(1, Math.floor(numSteps / 100)); // Update 100 times
+        
+        let stepCount = 0;
+        const runStep = () => {
+          if (stepCount >= numSteps) return;
+          
+          // Calculate forces using the physics engine
+          const calculateForces = (positions: number[][]) => {
+            return positions.map((pos, i) => {
+              const atom = { ...molecule.atoms[i], position: pos as [number, number, number] };
+              const forces = physics.calculateForces({ ...molecule, atoms: [atom] });
+              return forces.atomForces[0] || [0, 0, 0];
+            });
+          };
+          
+          mdState = simulator.step(mdState, calculateForces);
+          
+          // Update molecule positions periodically
+          if (stepCount % updateInterval === 0) {
+            set((state) => ({
+              molecules: state.molecules.map(m => 
+                m.id === moleculeId 
+                  ? {
+                      ...m,
+                      atoms: m.atoms.map((atom, i) => ({
+                        ...atom,
+                        position: mdState.positions[i] as [number, number, number]
+                      }))
+                    }
+                  : m
+              ),
+            }));
+          }
+          
+          stepCount++;
+          
+          // Continue simulation
+          if (stepCount < numSteps) {
+            setTimeout(runStep, 10); // 10ms delay between steps
+          }
         };
         
-        mdState = simulator.step(mdState, calculateForces);
-        
-        // Update molecule positions periodically
-        if (stepCount % updateInterval === 0) {
+        runStep();
+      }).catch(error => {
+        console.error('Failed to load MD simulator:', error);
+        // Fallback to simple simulation
+        const simulationSteps = settings.steps || 500;
+        const currentVelocities: [number, number, number][] = molecule.atoms.map(() => [
+          (Math.random() - 0.5) * 0.01,
+          (Math.random() - 0.5) * 0.01,
+          (Math.random() - 0.5) * 0.01
+        ]);
+
+        for (let step = 0; step < simulationSteps; step++) {
+          const forces = physics.calculateForces(molecule);
+          const stepSize = settings.timeStep || 0.01;
+
           set((state) => ({
             molecules: state.molecules.map(m => 
               m.id === moleculeId 
                 ? {
                     ...m,
-                    atoms: m.atoms.map((atom, i) => ({
-                      ...atom,
-                      position: mdState.positions[i] as [number, number, number]
-                    }))
+                    atoms: m.atoms.map((atom, i) => {
+                      const force = forces.atomForces[i] || [0, 0, 0];
+                      return {
+                        ...atom,
+                        position: [
+                          atom.position[0] + force[0] * stepSize,
+                          atom.position[1] + force[1] * stepSize,
+                          atom.position[2] + force[2] * stepSize,
+                        ] as [number, number, number]
+                      };
+                    })
                   }
                 : m
             ),
           }));
         }
+      });
+    },
+
+    optimizeGeometry: (moleculeId) => {
+      const state = get();
+      let currentMolecule = state.molecules.find(m => m.id === moleculeId);
+      if (!currentMolecule) return;
+
+      const stepSize = 0.001; // Small step for stability
+      const iterations = 100; // Number of optimization steps
+      
+      console.log('Starting geometry optimization for:', currentMolecule.name);
+
+      for (let i = 0; i < iterations; i++) {
+        const forceResult = physics.calculateForces(currentMolecule);
+        const forces = forceResult.atomForces;
         
-        stepCount++;
+        // Update atom positions based on forces
+        const optimizedAtoms = currentMolecule.atoms.map((atom, idx) => {
+          const force = forces[idx] || [0, 0, 0];
+          return {
+            ...atom,
+            position: [
+              atom.position[0] - force[0] * stepSize,
+              atom.position[1] - force[1] * stepSize,
+              atom.position[2] - force[2] * stepSize,
+            ] as [number, number, number],
+          };
+        });
         
-        // Continue simulation
-        if (stepCount < numSteps) {
-          setTimeout(runStep, 10); // 10ms delay between steps
-        }
+        currentMolecule = { ...currentMolecule, atoms: optimizedAtoms };
+      }
+
+      // Calculate final properties after optimization
+      const finalResults = physics.calculatePhysics(currentMolecule);
+      
+      // Update the molecule with optimized geometry and new properties
+      const optimizedMolecule = {
+        ...currentMolecule,
+        energy: finalResults.totalEnergy,
+        dipoleMoment: physics.calculateDipoleMoment(currentMolecule),
       };
       
-      runStep();
-    }).catch(error => {
-      console.error('Failed to load MD simulator:', error);
-      // Fallback to simple simulation
-      const simulationSteps = settings.steps || 500;
-      let currentVelocities: [number, number, number][] = molecule.atoms.map(() => [
-        (Math.random() - 0.5) * 0.01,
-        (Math.random() - 0.5) * 0.01,
-        (Math.random() - 0.5) * 0.01
-      ]);
+      console.log('Optimization complete. Final energy:', finalResults.totalEnergy);
 
-      for (let step = 0; step < simulationSteps; step++) {
-        const forces = physics.calculateForces(molecule);
-        const stepSize = settings.timeStep || 0.01;
+      set((state) => ({
+        molecules: state.molecules.map(m => 
+          m.id === moleculeId ? optimizedMolecule : m
+        ),
+      }));
+    },
 
-        set((state) => ({
-          molecules: state.molecules.map(m => 
-            m.id === moleculeId 
-              ? {
-                  ...m,
-                  atoms: m.atoms.map((atom, i) => {
-                    const force = forces.atomForces[i] || [0, 0, 0];
-                    return {
-                      ...atom,
-                      position: [
-                        atom.position[0] + force[0] * stepSize,
-                        atom.position[1] + force[1] * stepSize,
-                        atom.position[2] + force[2] * stepSize,
-                      ] as [number, number, number]
-                    };
-                  })
-                }
-              : m
-          ),
-        }));
+    calculateDistance: (moleculeId, atom1Id, atom2Id) => {
+      const state = get();
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      if (!molecule) return null;
+
+      const atom1 = molecule.atoms.find(a => a.id === atom1Id);
+      const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+
+      if (atom1 && atom2) {
+        return physics.calculateDistanceBetweenAtoms(atom1, atom2);
       }
-    });
-  },
+      return null;
+    },
 
-  optimizeGeometry: (moleculeId) => {
-    const state = get();
-    let currentMolecule = state.molecules.find(m => m.id === moleculeId);
-    if (!currentMolecule) return;
+    calculateAngle: (moleculeId, atom1Id, atom2Id, atom3Id) => {
+      const state = get();
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      if (!molecule) return null;
 
-    const stepSize = 0.001; // Small step for stability
-    const iterations = 100; // Number of optimization steps
+      const atom1 = molecule.atoms.find(a => a.id === atom1Id);
+      const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+      const atom3 = molecule.atoms.find(a => a.id === atom3Id);
 
-    for (let i = 0; i < iterations; i++) {
-      const forces = physics.calculateForces(currentMolecule);
-      const optimizedAtoms = currentMolecule.atoms.map((atom, idx) => {
-        const force = forces[idx];
-        return {
-          ...atom,
-          position: [
-            atom.position[0] - force[0] * stepSize,
-            atom.position[1] - force[1] * stepSize,
-            atom.position[2] - force[2] * stepSize,
-          ] as [number, number, number],
-        };
-      });
-      currentMolecule = { ...currentMolecule, atoms: optimizedAtoms };
-    }
+      if (atom1 && atom2 && atom3) {
+        return physics.calculateAngleBetweenAtoms(atom1, atom2, atom3);
+      }
+      return null;
+    },
 
-    set((state) => ({
-      molecules: state.molecules.map(m => 
-        m.id === moleculeId ? currentMolecule : m
-      ),
-    }));
-  },
+    calculateTorsion: (moleculeId, atom1Id, atom2Id, atom3Id, atom4Id) => {
+      const state = get();
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      if (!molecule) return null;
 
-  calculateDistance: (moleculeId, atom1Id, atom2Id) => {
-    const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return null;
+      const atom1 = molecule.atoms.find(a => a.id === atom1Id);
+      const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+      const atom3 = molecule.atoms.find(a => a.id === atom3Id);
+      const atom4 = molecule.atoms.find(a => a.id === atom4Id);
 
-    const atom1 = molecule.atoms.find(a => a.id === atom1Id);
-    const atom2 = molecule.atoms.find(a => a.id === atom2Id);
+      if (atom1 && atom2 && atom3 && atom4) {
+        return physics.calculateTorsionAngleBetweenAtoms(atom1, atom2, atom3, atom4);
+      }
+      return null;
+    },
 
-    if (atom1 && atom2) {
-      return physics.calculateDistanceBetweenAtoms(atom1, atom2);
-    }
-    return null;
-  },
+    detectHydrogenBonds: (moleculeId) => {
+      const state = get();
+      const molecule = state.molecules.find(m => m.id === moleculeId);
+      if (!molecule) return [];
 
-  calculateAngle: (moleculeId, atom1Id, atom2Id, atom3Id) => {
-    const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return null;
+      return physics.detectHydrogenBonds(molecule);
+    },
 
-    const atom1 = molecule.atoms.find(a => a.id === atom1Id);
-    const atom2 = molecule.atoms.find(a => a.id === atom2Id);
-    const atom3 = molecule.atoms.find(a => a.id === atom3Id);
+    loadExtractedMolecules: (extractedMolecules) => {
+      const newMolecules: Molecule[] = [];
 
-    if (atom1 && atom2 && atom3) {
-      return physics.calculateAngleBetweenAtoms(atom1, atom2, atom3);
-    }
-    return null;
-  },
-
-  calculateTorsion: (moleculeId, atom1Id, atom2Id, atom3Id, atom4Id) => {
-    const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return null;
-
-    const atom1 = molecule.atoms.find(a => a.id === atom1Id);
-    const atom2 = molecule.atoms.find(a => a.id === atom2Id);
-    const atom3 = molecule.atoms.find(a => a.id === atom3Id);
-    const atom4 = molecule.atoms.find(a => a.id === atom4Id);
-
-    if (atom1 && atom2 && atom3 && atom4) {
-      return physics.calculateTorsionAngleBetweenAtoms(atom1, atom2, atom3, atom4);
-    }
-    return null;
-  },
-
-  detectHydrogenBonds: (moleculeId) => {
-    const state = get();
-    const molecule = state.molecules.find(m => m.id === moleculeId);
-    if (!molecule) return [];
-
-    return physics.detectHydrogenBonds(molecule);
-  },
-
-  loadExtractedMolecules: (extractedMolecules) => {
-    const newMolecules: Molecule[] = [];
-
-    for (const extracted of extractedMolecules) {
-      // Tentar criar molécula a partir da fórmula
-      if (extracted.formula) {
-        const molecule = get().createMoleculeFromFormula(extracted.formula, extracted.name);
-        if (molecule) {
-          newMolecules.push(molecule);
-        }
-      } else {
-        // Criar molécula placeholder se não tiver fórmula
-        const placeholderMolecule: Molecule = {
-          id: generateId(),
-          name: extracted.name,
-          atoms: [],
-          bonds: [],
-          properties: {
-            totalEnergy: 0,
-            dipoleMoment: 0,
-            centerOfMass: [0, 0, 0]
-          },
-          metadata: {
-            source: 'PubMed',
-            type: extracted.type,
-            mechanism: extracted.mechanism,
-            target: extracted.target,
-            confidence: extracted.confidence
+      for (const extracted of extractedMolecules) {
+        // Tentar criar molécula a partir da fórmula
+        if (extracted.formula) {
+          const molecule = get().createMoleculeFromFormula(extracted.formula, extracted.name);
+          if (molecule) {
+            newMolecules.push(molecule);
           }
-        };
-        newMolecules.push(placeholderMolecule);
-      }
-    }
-
-    // Adicionar moléculas à coleção existente
-    set((state) => ({
-      molecules: [...state.molecules, ...newMolecules],
-      activeMoleculeId: newMolecules.length > 0 ? newMolecules[0].id : state.activeMoleculeId
-    }));
-  },
-
-  createMoleculeFromFormula: (formula, name) => {
-    try {
-      // Parser simples de fórmula molecular
-      const atoms: Atom[] = [];
-      const elementCounts = new Map<string, number>();
-      
-      // Regex para extrair elementos e suas quantidades
-      const elementRegex = /([A-Z][a-z]?)(\d*)/g;
-      let match;
-      
-      while ((match = elementRegex.exec(formula)) !== null) {
-        const element = match[1];
-        const count = parseInt(match[2]) || 1;
-        elementCounts.set(element, count);
-      }
-
-      // Criar átomos baseados na fórmula
-      let atomIndex = 0;
-      for (const [element, count] of elementCounts) {
-        for (let i = 0; i < count; i++) {
-          const elementData = ELEMENT_DATA[element];
-          if (elementData) {
-            // Posicionar átomos em uma estrutura simples
-            const angle = (atomIndex * 2 * Math.PI) / Array.from(elementCounts.values()).reduce((a, b) => a + b, 0);
-            const radius = 2.0;
-            
-            atoms.push({
-              id: generateId(),
-              element,
-              position: [
-                radius * Math.cos(angle),
-                radius * Math.sin(angle),
-                0
-              ],
-              charge: 0,
-              velocity: [0, 0, 0],
-              force: [0, 0, 0]
-            });
-            atomIndex++;
-          }
+        } else {
+          // Criar molécula placeholder se não tiver fórmula
+          const placeholderMolecule: Molecule = {
+            id: generateId(),
+            name: extracted.name,
+            atoms: [],
+            bonds: [],
+          };
+          newMolecules.push(placeholderMolecule);
         }
       }
 
-      // Criar ligações simples entre átomos adjacentes (estrutura linear simples)
-      const bonds: Bond[] = [];
-      for (let i = 0; i < atoms.length - 1; i++) {
-        bonds.push({
-          id: generateId(),
-          atom1Id: atoms[i].id,
-          atom2Id: atoms[i + 1].id,
-          type: 'single',
-          length: 1.5,
-          strength: 1.0
-        });
-      }
+      // Adicionar moléculas à coleção existente
+      set((state) => ({
+        molecules: [...state.molecules, ...newMolecules],
+        activeMoleculeId: newMolecules.length > 0 ? newMolecules[0].id : state.activeMoleculeId
+      }));
+    },
+
+    loadMolecule: (moleculeData: Molecule) => {
+      const moleculeId = generateId();
+
+      const atoms: Atom[] = moleculeData.atoms?.map((atom: any, index: number) => ({
+        id: `${moleculeId}-atom-${index}`,
+        element: atom.symbol || atom.element || 'C',
+        position: [atom.x || atom.position?.[0] || 0, atom.y || atom.position?.[1] || 0, atom.z || atom.position?.[2] || 0] as [number, number, number],
+        color: ELEMENT_DATA[atom.symbol || atom.element || 'C']?.color || '#CCCCCC',
+        radius: ELEMENT_DATA[atom.symbol || atom.element || 'C']?.radius || 0.5,
+        charge: 0
+      })) || [];
+
+      const bonds: Bond[] = moleculeData.bonds?.map((bond: any, index: number) => ({
+        id: `${moleculeId}-bond-${index}`,
+        atom1Id: atoms[bond.from || bond.atom1Id || bond.atom1]?.id || '',
+        atom2Id: atoms[bond.to || bond.atom2Id || bond.atom2]?.id || '',
+        bondType: 'single' as const,
+        length: 1.5
+      })) || [];
 
       const molecule: Molecule = {
-        id: generateId(),
-        name: name || `Molecule ${formula}`,
+        id: moleculeId,
+        name: moleculeData.name || 'Unknown Molecule',
         atoms,
         bonds,
-        properties: {
-          totalEnergy: 0,
-          dipoleMoment: 0,
-          centerOfMass: [0, 0, 0]
-        },
-        metadata: {
-          source: 'PubMed',
-          formula
-        }
       };
 
-      return molecule;
-    } catch (error) {
-      console.error('Error creating molecule from formula:', error);
-      return null;
-    }
-  },
+      set((state) => ({
+        molecules: [...state.molecules, molecule],
+        activeMoleculeId: molecule.id,
+      }));
+    },
 
-  clear: () => set({
-    molecules: [],
-    activeMoleculeId: null,
-  }),
-};
+    createMoleculeFromFormula: (formula, name) => {
+      try {
+        // Parser simples de fórmula molecular
+        const atoms: Atom[] = [];
+        const elementCounts = new Map<string, number>();
+        
+        // Regex para extrair elementos e suas quantidades
+        const elementRegex = /([A-Z][a-z]?)(\d*)/g;
+        let match;
+        
+        while ((match = elementRegex.exec(formula)) !== null) {
+          const element = match[1];
+          const count = parseInt(match[2]) || 1;
+          elementCounts.set(element, count);
+        }
+
+        // Criar átomos baseados na fórmula
+        let atomIndex = 0;
+        for (const [element, count] of elementCounts) {
+          for (let i = 0; i < count; i++) {
+            const elementData = ELEMENT_DATA[element];
+            if (elementData) {
+              atoms.push({
+                id: `atom-${atomIndex++}`,
+                element: element,
+                position: [0, 0, 0], // Posição inicial arbitrária
+                color: elementData.color,
+                radius: elementData.radius,
+                charge: 0,
+              });
+            }
+          }
+        }
+
+        // Lógica simplificada para adicionar ligações (apenas para visualização básica)
+        const bonds: Bond[] = [];
+        if (atoms.length >= 2) {
+          for (let i = 0; i < atoms.length - 1; i++) {
+            bonds.push({
+              id: `bond-${i}`,
+              atom1Id: atoms[i].id,
+              atom2Id: atoms[i+1].id,
+              bondType: 'single',
+              length: 1.5,
+            });
+          }
+        }
+
+        const molecule: Molecule = {
+          id: generateId(),
+          name: name || formula,
+          atoms,
+          bonds,
+        };
+
+        return molecule;
+      } catch (error) {
+        console.error('Error creating molecule from formula:', error);
+        return null;
+      }
+    },
+
+    clear: () => set({
+      molecules: [],
+      activeMoleculeId: null,
+    }),
+  };
 });
+
+
